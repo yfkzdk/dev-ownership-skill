@@ -1,0 +1,180 @@
+---
+name: dev-ownership
+version: 0.1.0-draft
+description: >-
+  Developer ownership methodology for AI-assisted coding. Invoke whenever
+  the user asks to implement a feature, fix a bug, refactor, or design a
+  solution. Triggers on requests to write code, build features, create
+  implementations, or any development task where AI generates code the
+  developer must own and be accountable for. NOT for general Q&A,
+  documentation-only requests, or pure research without implementation.
+---
+
+# Dev Ownership - AI辅助开发的决策者方法论
+
+## 硬规则
+
+以下规则适用于所有阶段。违反任何一条都必须暂停并修正。
+
+1. **永远不自动提交。** 每次 git 操作必须开发者在当前轮次明确请求。
+   **WHY:** Claude 默认行为是在完成工作后主动提交，而非等待开发者确认。在 Sonnet 4.5/4.6 上观察到。
+   **Retire when:** 默认模型在冷启动后连续3次在执行 git 操作前主动请求确认。
+
+2. **永远不发明值。** 文件路径、环境变量、ID、函数名、库API——不确定就停下来问。
+   **WHY:** Claude 默认行为是生成看似合理的值（路径/变量名/API名）而非承认不确定。在 Sonnet 4.5/4.6 上观察到。
+   **Retire when:** 默认模型在冷启动后连续3次对模糊标识符主动提问澄清。
+
+3. **一个阶段至少一个commit，禁止跨阶段合并。** 禁止事后整理commit历史。
+   **WHY:** 面试诊断书 §1.2 + §3.8 — 压缩后的commit丢失了决策时序，面试官一眼能识别。commit历史必须反映真实开发轨迹。
+
+4. **阶段出口必须过Feynman门禁。** 开发者用自己的话解释通过后，AI才能进入下一阶段。
+   **WHY:** 面试诊断书 §1.1 + §1.6 — 能说出概念名称≠能解释为什么。门禁强制"教给别人听"以暴露理解盲区。
+
+5. **设计方案前必须搜索。** 至少3个信息源（GitHub/文档/行业标准），搜索过程记录到session log。
+   **WHY:** Claude 默认行为是用内部知识直接设计方案，不验证已有方案。在 Sonnet 4.5/4.6 上观察到。
+   **Retire when:** 默认模型在冷启动后连续3次在提出方案前主动执行外部搜索。
+
+6. **代码审查不由另一个AI独立执行。** 开发者先用5轴清单自查，AI只做标记辅助。
+   **WHY:** 面试诊断书 §2.4 + §3.6 — 审查能力必须属于开发者，而非工具链。AI审查结果仅作对照参考。
+
+7. **测试必须具备双路径。** 正确路径 + API不可用时的本地fixture兜底路径。
+   **WHY:** 防止测试依赖外部API可用性，确保离线环境也能完整运行。
+
+8. **AI交互实时记录，禁止事后润色。** 开发者原始输入原文照录，不允许AI改写。
+   **WHY:** 面试诊断书 §1.4 — 事后润色的PROMPTS.md被面试官识破。session log是开发过程的原始快照，不是交付物。
+
+9. **每项设计/优化变更必须逐条对应到规格条款。** 禁止增加规格未要求的"优化"或"改进"。
+   **WHY:** AI 默认倾向于在实现时附加"额外改进"，导致范围蔓延和非必要的复杂度。每行变更必须在 SPEC 中有明确依据。
+
+## 角色定义
+
+| 职责 | 你（开发者） | AI |
+|------|------------|-----|
+| 定位 | 决策者、审查者、集成者 | 研究员、生成器、检查员 |
+| 架构决策 | **你** | 枚举备选方案+利弊，供你选择 |
+| 代码Accept | **你**——每行都必须理解 | 生成代码+逐行解释 |
+| 测试设计 | **你**——决定测试场景和参数 | 生成测试骨架 |
+| Commit | **你**——写message、确认原子性 | 生成diff摘要 |
+| 搜索信息 | 审核来源可信度 | 执行搜索+整理结果 |
+| 反模式 | **消息路由（需求→AI→另一个AI审查→Accept）** | — |
+
+## 五阶段流程
+
+```
+1.Spec → 2.Design → 3.TDD → 4.Review → 5.Retrospect
+  │         │         │         │           │
+  Feynman   Feynman   Feynman   Feynman    Feynman
+  Gate      Gate      Gate      Gate       Gate
+  │         │         │         │           │
+  commit    commit    commit    commit     commit
+```
+
+每个阶段包含四个步骤：
+
+| 步骤 | 谁做 | 内容 |
+|------|------|------|
+| **执行** | AI为主，开发者审查 | 产出本阶段交付物 |
+| **AI自检** | AI | 对照本阶段出口标准逐项自查，输出自检报告 |
+| **Commit** | 开发者确认后AI执行 | 本阶段产出物提交到git |
+| **Feynman门禁** | 开发者为主，AI提问 | 开发者用自己的话解释本阶段关键决策 |
+
+### 各阶段入口/出口
+
+#### 阶段1: Spec（形式化规格）
+
+| 项目 | 内容 |
+|------|------|
+| **入口条件** | 开发者提出需求描述 |
+| **需求溯源四问** | ①需求从哪来？②有现成方案/库吗？③为什么不用？④如果造轮子，差异化价值是什么？ |
+| **AI产出** | 形式化规格草稿（前置条件/后置条件/不变量/测试场景推导/边界定义）+ AI推理摘要 |
+| **AI自检** | ①每项验收标准是否可测试？②边界是否明确？③是否有遗漏的异常路径？④本设计的每一行变更是否都能对应到 SPEC 中的具体条款？是否存在 SPEC 未要求的"优化"？ |
+| **出口标准** | 规格文档完成 + commit + Feynman门禁通过 |
+| **Feynman问题** | ①这个功能解决谁的什么问题？②不在范围内的最大一项是什么？③指出一条最容易在实现中被忽略的验收标准，解释为什么 |
+
+#### 阶段2: Design（架构设计）
+
+| 项目 | 内容 |
+|------|------|
+| **入口条件** | Spec阶段通过 |
+| **前置搜索** | 至少3个信息源，关键词+搜索结果记录到session log |
+| **AI产出** | 架构设计文档（限界上下文/领域模型/ADR决策记录/备选方案对比）+ AI推理摘要 |
+| **AI自检** | ①每个决策是否有明确理由？②备选方案是否充分枚举？③是否过度设计？④每项设计决策是否都能对应到 SPEC 中的具体条款？ |
+| **出口标准** | 设计文档完成 + commit + Feynman门禁通过 |
+| **Feynman问题** | ①在 ADR 中拒绝了哪个备选方案？引用 ADR 条款号解释原因 ②当前方案最大风险点对应 DESIGN 哪一节？③DESIGN 中是否有 SPEC 未要求的额外设计？ |
+
+#### 阶段3: TDD（测试驱动开发）
+
+| 项目 | 内容 |
+|------|------|
+| **入口条件** | Design阶段通过 |
+| **流程** | RED（写失败测试）→ 开发者审查测试 → GREEN（最小实现）→ REFACTOR |
+| **AI产出** | 测试用例（含参数选择理由）+ 实现代码（含逐行解释）+ AI推理摘要 |
+| **测试双路径** | Primary path（正常）+ Fallback path（API不可用时本地fixture） |
+| **AI自检** | ①测试是否覆盖边界？②断言能否抓到bug？③双路径是否都可用？ |
+| **出口标准** | 测试+代码完成，所有测试通过 + commit + Feynman门禁通过 |
+| **Feynman问题** | ①`[测试文件:行号]` 的参数 `[参数名]` 为什么选 `[值]` 而不是其他值？②`[源文件:行号]` 的 `[函数名]` 边界情况有哪些？测试覆盖了吗？③如果 `[源文件:行号]` 有一个单字符错误，断言能抓到吗？ |
+
+#### 阶段4: Review（代码审查）
+
+| 项目 | 内容 |
+|------|------|
+| **入口条件** | TDD阶段通过 |
+| **流程** | 开发者先用5轴清单自查 → AI标记潜在问题 → 开发者确认修正 |
+| **5轴** | 设计/可读性/性能/安全/可测性（详见code-review-checklist.md） |
+| **需求一致性检查** | 当前实现是否仍然对齐Spec验收标准？有无偏离？ |
+| **AI自检** | ①是否所有spec条款都有对应实现？②是否存在无spec依据的代码？③修正建议是否分级？④每项修正建议是否都是必要的（对应spec条款或明确的bug）？ |
+| **出口标准** | 审查通过 + 修正commit + Feynman门禁通过 |
+| **Feynman问题** | ①5轴审查发现的3个最大风险是什么？引用具体文件:行号 ②有没有代码接受了但没完全理解？指出文件:行号 ③`[源文件名]` 的 `[类名/函数名]` 用不同方案重写，变化最大的是什么？ |
+
+#### 阶段5: Retrospect（项目审视）
+
+| 项目 | 内容 |
+|------|------|
+| **入口条件** | Review阶段通过，所有代码已合并 |
+| **Step 1** | **可追溯性审计**（详见traceability-audit.md）：正向SPEC→CODE矩阵 + 反向CODE→SPEC矩阵 + 合规评分 |
+| **Step 2** | 失误记录（故意聚焦错误而非成就） |
+| **Step 3** | AI协作效果评估 |
+| **Step 4** | Start/Stop/Continue + 新陷阱候选 |
+| **AI自检** | ①审计是否逐类遍历？②失误是否追溯到根因？③是否有应加入known-traps的新陷阱？ |
+| **出口标准** | 审视报告完成 + commit + Feynman门禁通过 |
+| **Feynman问题** | ①这次最大的失误是什么？引用具体文件:行号和根本原因 ②下次类似项目哪里做不同？具体到流程/工具/检查点 ③有什么新陷阱应加入 known-traps.md？写下条目草稿 |
+
+## 每阶段AI产出必需的附件
+
+每个阶段AI交付产出物时，必须附带：
+
+### AI推理摘要
+- 我搜索了什么（关键词+来源）
+- 我拒绝了什么方案（及原因）
+- 我不确定什么（需要开发者重点关注的部分）
+
+## 禁止行为
+
+- 禁止接受开发者不理解每一行的代码
+- 禁止用另一个AI的输出作为代码审查的唯一依据
+- 禁止跳过SPEC阶段直接写代码
+- 禁止事后润色session log
+- 禁止AI总结"开发者学到了什么"——必须开发者自己说出来
+- 禁止在Feynman门禁未通过时进入下一阶段
+- 禁止在实现时附加 SPEC 未要求的"优化"或"改进"
+
+## 引用索引
+
+以下文件按需加载，提供深度参考：
+
+| 文件 | 内容 | 何时加载 |
+|------|------|---------|
+| [references/five-phase-workflow.md](references/five-phase-workflow.md) | 五阶段详细交互点 | 进入具体阶段时 |
+| [references/feynman-gate.md](references/feynman-gate.md) | 费曼门禁机制规范 | 阶段出口时 |
+| [references/research-protocol.md](references/research-protocol.md) | 搜索执行规范 | Design阶段前置搜索时 |
+| [references/ai-interaction-patterns.md](references/ai-interaction-patterns.md) | 6种AI交互模式 | 选择交互方式时 |
+| [references/code-review-checklist.md](references/code-review-checklist.md) | 5轴审查清单 | Review阶段 |
+| [references/commit-discipline.md](references/commit-discipline.md) | 结构化提交规范 | 每次commit前 |
+| [references/openspec-integration.md](references/openspec-integration.md) | OpenSpec对接说明 | 全流程（规范制品层） |
+| [references/spec-writing-guide.md](references/spec-writing-guide.md) | 形式化规格编写方法 | Spec阶段 |
+| [references/dual-path-testing.md](references/dual-path-testing.md) | 双路径测试设计 | TDD阶段 |
+| [references/known-traps.md](references/known-traps.md) | 已验证陷阱清单（项目模板） | 全流程 |
+| [references/traceability-audit.md](references/traceability-audit.md) | 可追溯性审计规范 | Retrospect阶段Step 1 |
+| [templates/adr-template.md](templates/adr-template.md) | 架构决策记录模板 | Design阶段 |
+| [templates/session-log.md](templates/session-log.md) | 交互记录模板 | 全流程实时填写 |
+| [templates/retrospect-template.md](templates/retrospect-template.md) | 项目审视模板 | Retrospect阶段 |
