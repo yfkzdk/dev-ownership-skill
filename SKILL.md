@@ -175,6 +175,7 @@ description: >-
 | [references/dual-path-testing.md](references/dual-path-testing.md) | 双路径测试设计 | TDD阶段 |
 | [references/known-traps.md](references/known-traps.md) | 已验证陷阱清单（项目模板） | 全流程 |
 | [references/traceability-audit.md](references/traceability-audit.md) | 可追溯性审计规范 | Retrospect阶段Step 1 |
+| [references/measurement-pyramid.md](references/measurement-pyramid.md) | 个人测量金字塔（GQM+EngThrive+AI质量悖论） | 全流程度量 |
 | [references/v0.2.0-roadmap.md](references/v0.2.0-roadmap.md) | v0.2.0 改进路线图（9缺口） | 全流程参考 |
 | [templates/adr-template.md](templates/adr-template.md) | 架构决策记录模板 | Design阶段 |
 | [templates/session-log.md](templates/session-log.md) | 交互记录模板 | 全流程实时填写 |
