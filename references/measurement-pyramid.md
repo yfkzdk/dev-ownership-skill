@@ -77,6 +77,9 @@ BDD触发 = 一个功能模块的commit无法完成对应需求
           以"真实功能调用成功"为判定标准。
 ```
 
+触发后: 进入 **BDD 响应协议** ([bdd-response-protocol.md](bdd-response-protocol.md))
+        诊断→分类处理→重试→升级
+
 ### 5. 过滤器链效能衰减
 
 ```
