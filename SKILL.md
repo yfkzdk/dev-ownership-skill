@@ -179,6 +179,7 @@ description: >-
 | [references/known-traps.md](references/known-traps.md) | 已验证陷阱清单（项目模板） | 全流程 |
 | [references/traceability-audit.md](references/traceability-audit.md) | 可追溯性审计规范 | Retrospect阶段Step 1 |
 | [references/measurement-pyramid.md](references/measurement-pyramid.md) | 个人测量金字塔（GQM+EngThrive+AI质量悖论） | 全流程度量 |
+| [references/startup-checklist.md](references/startup-checklist.md) | 项目启动预防性检查清单（C01-C05） | 新项目初始化时 |
 | [references/bdd-response-protocol.md](references/bdd-response-protocol.md) | BDD 响应协议（模块卡住→诊断→治疗→升级） | BDD触发时 |
 | [references/mutation-testing-guide.md](references/mutation-testing-guide.md) | 突变测试配置指南（Python/JS/Go/Rust） | TDD/Review阶段 |
 | [references/v0.2.0-roadmap.md](references/v0.2.0-roadmap.md) | v0.2.0 改进路线图（9缺口） | 全流程参考 |
