@@ -56,6 +56,17 @@
 
 ---
 
+### C06: Git Hook 安装
+
+- [ ] 运行 `python scripts/install-hooks.py` —— 安装 pre-commit hook
+- [ ] 验证: 创建一个测试 commit（改一行代码引入 lint error）→ commit 被阻断
+- [ ] 确认 hook 脚本存在于 `.git/hooks/pre-commit`
+
+**来源**: mini-erp-core（pre-commit 工具存在但未安装为 hook）
+**重复次数**: 2 (md2blog, mini-erp-core 均未安装)
+
+---
+
 ## 执行规则
 
 1. **新项目第一次 git init 后立即执行此清单**

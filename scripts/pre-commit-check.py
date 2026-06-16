@@ -29,10 +29,13 @@ NC = "\033[0m"
 EXIT_CODE = 0
 
 
-def run(cmd: list[str], cwd: Path) -> tuple[int, str, str]:
+def run(cmd: list[str], cwd: Path, env: dict | None = None) -> tuple[int, str, str]:
     """Run command with UTF-8, safe on Windows GBK environments."""
-    r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
-                       encoding="utf-8", errors="replace")
+    import os
+    kwargs = dict(cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if env is not None:
+        kwargs["env"] = env
+    r = subprocess.run(cmd, **kwargs)
     return r.returncode, (r.stdout or ""), (r.stderr or "")
 
 
@@ -51,7 +54,7 @@ def load_config(root: Path) -> dict:
         for c in candidates:
             if c.exists():
                 import yaml
-                with open(c) as f:
+                with open(c, encoding="utf-8") as f:
                     return yaml.safe_load(f)
     return {"gates": {}}
 
@@ -164,6 +167,15 @@ def gate_tests(root: Path, pt: str, skip_slow: bool) -> tuple[bool, Optional[flo
     if not cmd:
         print(f"{YELLOW}[WARN]{NC} Unknown project type, skipping tests")
         return True, None
+
+    # Auto-detect PYTHONPATH: if src/ exists, prepend it
+    env = None
+    if pt in ("python", "django") and (root / "src").is_dir():
+        import os
+        env = os.environ.copy()
+        existing = env.get("PYTHONPATH", "")
+        src_path = str(root / "src")
+        env["PYTHONPATH"] = f"{src_path}{os.pathsep}{existing}" if existing else src_path
 
     print(f"  {(' '.join(cmd)[:80])}")
     code, out, err = run(cmd, root)
