@@ -179,8 +179,9 @@ description: >-
 | [references/mutation-testing-guide.md](references/mutation-testing-guide.md) | 突变测试配置指南（Python/JS/Go/Rust） | TDD/Review阶段 |
 | [references/v0.2.0-roadmap.md](references/v0.2.0-roadmap.md) | v0.2.0 改进路线图（9缺口） | 全流程参考 |
 | [config/quality-gates.yml](config/quality-gates.yml) | 质量门禁配置（版本控制） | CI集成 |
-| [scripts/pre-commit-check.sh](scripts/pre-commit-check.sh) | 静态分析+测试门禁脚本 | 每次commit |
-| [scripts/cdr-sr-tracker.py](scripts/cdr-sr-tracker.py) | CDR/SR 追踪脚本 | 阶段出口 |
+| [scripts/pre-commit-check.py](scripts/pre-commit-check.py) | Python 质量门禁（读 quality-gates.yml，框架检测） | 每次 commit |
+| [scripts/cdr-sr-tracker.py](scripts/cdr-sr-tracker.py) | CDR/SR 追踪（v2: 多目录+AI检测+测试反馈） | 阶段出口 |
+| [scripts/project-inspector.py](scripts/project-inspector.py) | 4-Phase 全流程项目检查器 | 项目启动/阶段出口 |
 | [scripts/gate-quota-tracker.py](scripts/gate-quota-tracker.py) | 门禁配额追踪脚本 | 全流程 |
 | [templates/session-log-v2.md](templates/session-log-v2.md) | 量化会话日志模板 | 全流程实时填写 |
 | [templates/pre-project-self-assessment.md](templates/pre-project-self-assessment.md) | 项目启动前自评量表 | 项目启动前 |
