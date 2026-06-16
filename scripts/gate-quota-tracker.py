@@ -26,9 +26,27 @@ STATE_DIR.mkdir(parents=True, exist_ok=True)
 GLOBAL_STATE = STATE_DIR / "global.json"
 
 # Config
-DESIGN_GATES = ["spec", "design"]  # never skippable
-CODE_GATES = ["tdd", "review", "retrospect"]  # quota = 1 per project
-QUOTA_PER_PROJECT = 1
+# Config: per-level quotas
+LEVEL_CONFIG = {
+    "P0": {  # 面试/生产: 设计门禁不可跳过, 代码门禁不可跳过
+        "design_skippable": False,
+        "code_quota": 0,
+        "carry_over": True,
+    },
+    "P1": {  # 练习项目: 设计不可跳过, 代码可跳1次
+        "design_skippable": False,
+        "code_quota": 1,
+        "carry_over": True,
+    },
+    "P2": {  # 测试/验证: 全部可跳, 不累计
+        "design_skippable": True,
+        "code_quota": 999,  # unlimited
+        "carry_over": False,
+    },
+}
+
+DESIGN_GATES = ["spec", "design"]
+CODE_GATES = ["tdd", "review", "retrospect"]
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -46,7 +64,9 @@ def get_project_state(project_id: str) -> dict[str, Any]:
     if not path.exists():
         return {
             "project_id": project_id,
-            "quota_remaining": QUOTA_PER_PROJECT,
+            "level": "P2",  # default: test project
+            "quota_remaining": 999,
+            "design_skippable": True,
             "quota_carried_from_prev": 0,
             "skipped": [],
             "completed": [],
@@ -61,8 +81,11 @@ def get_global_state() -> dict[str, Any]:
 
 def cmd_status(project_id: str) -> None:
     state = get_project_state(project_id)
+    lvl = state.get("level", "P2")
     print(f"Project: {project_id}")
-    print(f"Quota remaining: {state['quota_remaining']}")
+    print(f"Level: {lvl}")
+    print(f"Design gates: {'skippable' if state.get('design_skippable', True) else 'NOT skippable'}")
+    print(f"Code gate quota: {state['quota_remaining']} remaining")
     if state["quota_carried_from_prev"] < 0:
         print(f"Carried debt: {state['quota_carried_from_prev']} (must repay)")
     print(f"Skipped: {', '.join(state['skipped']) if state['skipped'] else 'none'}")
@@ -71,7 +94,8 @@ def cmd_status(project_id: str) -> None:
     if state["skipped"]:
         print()
         print("⚠  Skipped gates must be completed before Retrospect.")
-        print("   They will carry over to the next project as quota debt.")
+        if LEVEL_CONFIG.get(lvl, {}).get("carry_over", False):
+            print("   They will carry over to the next project as quota debt.")
 
     if state["quota_remaining"] < 0:
         print()
@@ -82,12 +106,14 @@ def cmd_skip(project_id: str, gate_name: str) -> None:
     state = get_project_state(project_id)
 
     if gate_name in DESIGN_GATES:
-        print(f"🔴 Design gate '{gate_name}' CANNOT be skipped.")
-        print("   Design/architecture decisions are review-pass mandatory.")
-        return
+        if not state.get("design_skippable", False):
+            print(f"🔴 Design gate '{gate_name}' CANNOT be skipped.")
+            print(f"   Current level: {state.get('level', 'P2')} — design gates are mandatory.")
+            return
+        # P2: design gates are skippable
 
-    if gate_name not in CODE_GATES:
-        print(f"⚠  Unknown gate '{gate_name}'. Known code gates: {CODE_GATES}")
+    if gate_name not in DESIGN_GATES and gate_name not in CODE_GATES:
+        print(f"⚠  Unknown gate '{gate_name}'. Known: design={DESIGN_GATES}, code={CODE_GATES}")
         return
 
     if gate_name in state["skipped"]:
@@ -151,9 +177,7 @@ def cmd_close_project(project_id: str) -> None:
 
     print(f"Project '{project_id}' closed.")
     print(f"Uncompleted gates carried to next project: {debt}")
-    print(f"Next project quota: {QUOTA_PER_PROJECT - debt}")
-    if QUOTA_PER_PROJECT - debt < 0:
-        print(f"🔴 Next project starts with ZERO skips. Repay {abs(QUOTA_PER_PROJECT - debt)} gates first.")
+    print(f"Next project: quota will be reduced by {debt} (from whatever the next project's level allows).")
 
 
 def main():
@@ -162,6 +186,9 @@ def main():
     sub = parser.add_subparsers(dest="command")
 
     sub.add_parser("status", help="Show current quota status")
+
+    set_p = sub.add_parser("set-level", help="Set project level (P0/P1/P2)")
+    set_p.add_argument("level", help="P0=面试/生产, P1=练习, P2=测试/验证")
 
     skip_p = sub.add_parser("skip", help="Skip a gate")
     skip_p.add_argument("gate", help="Gate name: tdd|review|retrospect")
@@ -175,6 +202,8 @@ def main():
 
     if args.command == "status":
         cmd_status(args.project_id)
+    elif args.command == "set-level":
+        cmd_set_level(args.project_id, args.level)
     elif args.command == "skip":
         cmd_skip(args.project_id, args.gate)
     elif args.command == "complete":
