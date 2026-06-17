@@ -97,6 +97,25 @@ docs(retrospect): project review with traceability audit
 5. [ ] 如果是系列commit，Refs 字段是否指向了前一个commit？
 6. [ ] 是否可以独立 revert 这个 commit 而不影响其他功能？
 
+## `--no-verify` 使用规则
+
+1. **每次使用 `--no-verify` 必须在 commit body 中记录原因**：
+   ```
+   --no-verify: <具体原因>
+   例: --no-verify: TDD RED phase — tests expected to fail
+   例: --no-verify: coverage gap (__main__.py 0%) — deferred to next iteration
+   ```
+
+2. **禁止原因**（出现即违规）:
+   - "为了快速提交"
+   - "lint 问题太多懒得修"
+   - 空白或无原因
+
+3. **Retrospect 统计**: 项目结束时，AI 必须统计 `--no-verify` 次数和原因分布。
+   - RED 阶段占比高 → 正常
+   - "懒得修"占比高 → 警告
+   - 原因缺失 → 违规
+
 ## 反模式
 
 | 反模式 | 为什么错 | 真实数据佐证 |

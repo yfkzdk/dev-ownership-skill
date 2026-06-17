@@ -253,6 +253,34 @@ def main():
             print(f"{RED}[FAIL]{NC} Coverage {cov}% < {threshold*100}%")
             EXIT_CODE = 1
 
+    # Cognitive Debt Ratio — auto-run from measurement pyramid
+    cdr_threshold = config.get("gates", {}).get("cognitive_tracking", {}).get("cdr", {}).get("threshold", 0.15)
+    cdr_script = root.parent / ".claude" / "skills" / "dev-ownership" / "scripts" / "cdr-sr-tracker.py"
+    if not cdr_script.exists():
+        # Try skill repo location
+        import os as _os
+        for candidate in [
+            Path(_os.path.expanduser("~/.claude/skills/dev-ownership/scripts/cdr-sr-tracker.py")),
+            Path(_os.path.expanduser("~/dev-ownership-skill/scripts/cdr-sr-tracker.py")),
+        ]:
+            if candidate.exists():
+                cdr_script = candidate
+                break
+    if cdr_script.exists():
+        code, out, err = run([sys.executable, str(cdr_script), "--project-root", str(root), "--output", "json"], root)
+        if code == 0:
+            try:
+                cdr_data = json.loads(out)
+                cdr = cdr_data.get("cdr", 0.0)
+                if cdr > cdr_threshold:
+                    print(f"{YELLOW}[CDR] {cdr:.2%}{NC} (threshold ≤{cdr_threshold:.0%}) — cognitive debt exceeds limit")
+                else:
+                    print(f"{GREEN}[CDR] {cdr:.2%}{NC} — within threshold")
+            except json.JSONDecodeError:
+                pass
+    else:
+        pass  # CDR tracker not available — skip silently
+
     if args.json:
         print(json.dumps(results, indent=2))
 
