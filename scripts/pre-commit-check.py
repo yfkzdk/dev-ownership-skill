@@ -253,6 +253,40 @@ def main():
                 except OSError:
                     pass
 
+    # Rule 11: Format vs Logic mix detection
+    if pt in ("python", "django", "go", "rust"):
+        _, staged_diff, _ = run(["git", "diff", "--cached", "--unified=0"], root)
+        if staged_diff:
+            has_format_only = False
+            has_logic = False
+            for line in staged_diff.split("\n"):
+                if (line.startswith("+") or line.startswith("-")) and not line.startswith("+++") and not line.startswith("---"):
+                    stripped = line[1:].strip()
+                    original = line[1:]
+                    if stripped == original.strip() and stripped != original:
+                        has_format_only = True
+                    elif stripped and not stripped.startswith("#"):
+                        has_logic = True
+            if has_format_only and has_logic:
+                print(f"{YELLOW}[FAIL]{NC} Rule 11: Formatting and logic changes mixed in same commit.")
+                print("  Split: style(scope): ruff fix → feat(scope): logic change")
+                EXIT_CODE = 1
+
+    # Rule 10: Code move vs modify detection
+    if pt in ("python", "django", "go", "rust"):
+        _, rename_lines, _ = run(["git", "diff", "--cached", "--name-status"], root)
+        for rline in rename_lines.split("\n"):
+            if rline.startswith("R"):
+                parts = rline.split("\t")
+                if len(parts) >= 3:
+                    old_f, new_f = parts[1], parts[2]
+                    _, rename_diff, _ = run(["git", "diff", "--cached", "--", new_f], root)
+                    added = [l for l in rename_diff.split("\n") if l.startswith("+") and not l.startswith("+++")]
+                    removed = [l for l in rename_diff.split("\n") if l.startswith("-") and not l.startswith("---")]
+                    if added and removed:
+                        print(f"{YELLOW}[WARN]{NC} Rule 10: {old_f} → {new_f} has move AND modify.")
+                        print("  Consider: 1st commit = pure move, 2nd commit = modifications")
+
     # Gates
     for gate_name, gate_fn in [
         ("lint", lambda: gate_lint(root, pt)),

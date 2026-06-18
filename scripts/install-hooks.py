@@ -6,6 +6,7 @@ Usage: python install-hooks.py [--project-root .] [--skill-dir ~/.claude/skills/
 
 from __future__ import annotations
 
+import os
 import shutil
 import stat
 import subprocess
