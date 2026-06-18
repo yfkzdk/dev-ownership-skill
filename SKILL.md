@@ -87,7 +87,7 @@ description: >-
 |------|------|
 | **入口条件** | 开发者接收外部需求（他人给定的需求/issue/用户故事，非自己编造） |
 | **Step 0a: 需求接收与澄清** | ①需求的真实来源是谁？②这个需求打算解决谁的什么问题？③有没有明确不做的边界？④验收标准是什么？ |
-| **Step 0b: 对标研究** | 找 1-2 个解决同类问题的成熟系统（开源项目/行业标准/竞品），列出：①它们处理了哪些"反流程"（退货/冲销/撤销/异常）？②它们有哪些"用户角色"（谁有权做什么）？③它们有哪些"可配置项"（哪些参数不是写死的）？④它们的数据模型中有哪些我们没想到的字段？ |
+| **Step 0b: 对标研究** | AI自动spawn 3个搜索代理(并行): ①GitHub搜索代理→clone+读参考实现②Web搜索代理→找官方规范③论文搜索代理→arXiv/ACM。产出: search-summary.md。预提交hook强制检查——无摘要阻断commit |
 | **Step 0c: 范围决定** | 基于对标结果，明确：①范围内要做的；②标注为"已知但不在范围内"的（对标后发现存在，但有意识跳过）；③范围外（对标后仍然不知道的——这是真正的盲区） |
 | **Step 1: 形式化规格** | （原需求溯源四问合并入 Step 0a） |
 | **AI产出** | 形式化规格草稿（前置条件/后置条件/不变量/测试场景推导/边界定义）+ 对标研究报告 + AI推理摘要 |
@@ -170,7 +170,11 @@ description: >-
 |------|------|---------|
 | [references/five-phase-workflow.md](references/five-phase-workflow.md) | 五阶段详细交互点 | 进入具体阶段时 |
 | [references/feynman-gate.md](references/feynman-gate.md) | 费曼门禁机制规范 | 阶段出口时 |
-| [references/research-protocol.md](references/research-protocol.md) | 搜索执行规范 | Design阶段前置搜索时 |
+| [references/search-agents/orchestrator.md](references/search-agents/orchestrator.md) | 搜索代理编排器（三通道并行+合并+强制执行） | Spec阶段Step 0b |
+| [references/search-agents/github-agent.md](references/search-agents/github-agent.md) | GitHub 搜索代理 prompt | 编排器spawn |
+| [references/search-agents/web-agent.md](references/search-agents/web-agent.md) | Web/文档搜索代理 prompt | 编排器spawn |
+| [references/search-agents/papers-agent.md](references/search-agents/papers-agent.md) | 论文搜索代理 prompt | 编排器spawn |
+| [references/research-protocol.md](references/research-protocol.md) | 三通道搜索执行规范 | Design阶段前置搜索时 |
 | [references/ai-interaction-patterns.md](references/ai-interaction-patterns.md) | 6种AI交互模式 | 选择交互方式时 |
 | [references/code-review-checklist.md](references/code-review-checklist.md) | 5轴审查清单 | Review阶段 |
 | [references/commit-discipline.md](references/commit-discipline.md) | 结构化提交规范 | 每次commit前 |

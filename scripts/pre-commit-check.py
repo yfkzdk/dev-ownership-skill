@@ -229,6 +229,24 @@ def main():
         if has_spec and has_src:
             print(f"{YELLOW}[WARN]{NC} Cross-phase: spec + src in same commit\n")
 
+        # Search agent enforcement: proposal.md requires search-summary.md
+        if "proposal.md" in staged or "design.md" in staged:
+            summary = root / "openspec" / "changes" / "search-summary.md"
+            if not summary.exists():
+                print(f"{RED}[FAIL]{NC} Search summary missing: {summary}")
+                print("  Spec/Design commit requires three-channel search first.")
+                print("  Run: search agents (GitHub + Web + Papers) → search-summary.md")
+                EXIT_CODE = 1
+            elif "proposal.md" in staged:
+                import os as _os2
+                try:
+                    s_mtime = _os2.path.getmtime(str(summary))
+                    p_mtime = _os2.path.getmtime(str(root / "openspec" / "changes" / "proposal.md"))
+                    if s_mtime < p_mtime:
+                        print(f"{YELLOW}[WARN]{NC} search-summary.md older than proposal.md — re-run search?")
+                except OSError:
+                    pass
+
     # Gates
     for gate_name, gate_fn in [
         ("lint", lambda: gate_lint(root, pt)),
