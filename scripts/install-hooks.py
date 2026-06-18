@@ -36,30 +36,39 @@ def install_hook(project_root: Path, skill_dir: Path) -> bool:
         print(f"Error: {project_root} is not a git repository (no .git/hooks/)")
         return False
 
-    hook_path = hooks_dir / "pre-commit"
-    checker = skill_dir / "scripts" / "pre-commit-check.py"
+    python = sys.executable
+    installed = 0
 
-    if not checker.exists():
-        print(f"Error: pre-commit-check.py not found at {checker}")
+    # pre-commit hook — quality gates
+    pre_commit = hooks_dir / "pre-commit"
+    checker = skill_dir / "scripts" / "pre-commit-check.py"
+    if checker.exists():
+        pre_commit.write_text(f'''#!/usr/bin/env bash
+exec "{python}" "{checker}" "$@"
+''')
+        if hasattr(os, "chmod"):
+            os.chmod(pre_commit, pre_commit.stat().st_mode | 0o111)
+        print(f"  pre-commit: installed")
+        installed += 1
+
+    # commit-msg hook — message validation
+    commit_msg = hooks_dir / "commit-msg"
+    msg_checker = skill_dir / "scripts" / "commit-msg-check.py"
+    if msg_checker.exists():
+        commit_msg.write_text(f'''#!/usr/bin/env bash
+exec "{python}" "{msg_checker}" "$@"
+''')
+        if hasattr(os, "chmod"):
+            os.chmod(commit_msg, commit_msg.stat().st_mode | 0o111)
+        print(f"  commit-msg: installed")
+        installed += 1
+
+    if installed == 0:
+        print("Error: no checkers found")
         return False
 
-    # Write the hook script
-    python = sys.executable
-    hook_content = f'''#!/usr/bin/env bash
-# Installed by dev-ownership skill (install-hooks.py)
-# Runs quality gates before every commit.
-
-exec "{python}" "{checker}" "$@"
-'''
-
-    hook_path.write_text(hook_content)
-
-    # Make executable (Unix) or ensure it exists (Windows)
-    if hasattr(stat, "S_IXUSR"):
-        hook_path.chmod(hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-    print(f"Installed: {hook_path}")
-    print(f"  → runs: {checker.name}")
+    print(f"\n git commit 时将自动运行 pre-commit + commit-msg 检查。")
+    print(" 跳过(不推荐): git commit --no-verify")
     return True
 
 
