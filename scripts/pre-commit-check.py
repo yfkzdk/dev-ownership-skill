@@ -229,13 +229,19 @@ def main():
         if has_spec and has_src:
             print(f"{YELLOW}[WARN]{NC} Cross-phase: spec + src in same commit\n")
 
-        # Search agent enforcement: proposal.md requires search-summary.md
+        # Search agent enforcement: proposal.md requires search-summary.md + cross-reference
         if "proposal.md" in staged or "design.md" in staged:
             summary = root / "openspec" / "changes" / "search-summary.md"
+            cross_ref = root / "openspec" / "changes" / "search-cross-reference.md"
             if not summary.exists():
-                print(f"{RED}[FAIL]{NC} Search summary missing: {summary}")
+                print(f"{RED}[FAIL]{NC} search-summary.md missing: {summary}")
                 print("  Spec/Design commit requires three-channel search first.")
                 print("  Run: search agents (GitHub + Web + Papers) → search-summary.md")
+                EXIT_CODE = 1
+            if not cross_ref.exists():
+                print(f"{RED}[FAIL]{NC} search-cross-reference.md missing: {cross_ref}")
+                print("  AI must perform Phase 4 cross-referencing after agents complete.")
+                print("  Read all 3 search reports, find contradictions/consensus/gaps, write cross-reference.")
                 EXIT_CODE = 1
             elif "proposal.md" in staged:
                 import os as _os2
