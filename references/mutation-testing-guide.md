@@ -3,28 +3,31 @@
 > 突变测试（Mutation Testing）是测量**测试质量**的唯一客观方法。
 > 行覆盖率说"这行被跑过"，突变测试说"这行的 bug 被测出来过"。
 
-## Windows 配置（已验证）
+## Windows 配置（Python 3.9 — 已验证）
 
-**前置条件**: Python 3.11+
+**推荐**: `mutatest`（AST-based，无文件修改，Azure Pipelines 官方测试 Windows）
+
+```bash
+pip install mutatest
+set PYTHONPATH=src
+mutatest -s src/<your_module> -t "python -m pytest tests/ -q" -n 20
+
+# 结果解读:
+# DETECTED: X — 被测出来的 bug（好）
+# SURVIVED: Y — 测试没发现的 bug（盲区）
+# 突变得分 = DETECTED / (DETECTED + SURVIVED) × 100%
+# 目标: ≥70%
+```
+
+## Windows 配置（Python 3.11+ — 已验证）
+
+**备选**: `pytest-gremlins`（3.73× 比 mutmut 快，pytest 集成）
 
 ```bash
 pip install pytest-gremlins
-
-# Windows 必须设置三项:
-# 1. PYTHONUTF8=1       — 解决 GBK 编码问题
-# 2. --gremlin-executor=subprocess — Windows 无 fork()
-# 3. PYTHONPATH=src      — 项目路径（和运行测试一样）
-
 set PYTHONUTF8=1
 set PYTHONPATH=src
 python -m pytest tests/ --gremlins --gremlin-executor=subprocess -v
-
-# 结果解读:
-# Zapped: X gremlins (%) — 被测出来的 bug
-# Survived: Y gremlins (%) — 测试没发现的 bug（这是问题）
-# 突变得分 = Zapped / (Zapped + Survived) × 100%
-
-# 目标: ≥70%
 ```
 
 ## macOS/Linux 配置
