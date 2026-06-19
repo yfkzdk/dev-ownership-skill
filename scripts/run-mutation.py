@@ -76,7 +76,11 @@ def get_changed_files(root: Path) -> list[str]:
 
 def run_mutation(src_path: str, root: Path, n_samples: int,
                  mutatest: str, python: str) -> dict:
-    """Run mutatest once, return {detected, survived, total, score}."""
+    """Run mutatest once, return {detected, survived, total, score, survivors: [...]}."""
+    import os
+    env = os.environ.copy()
+    src_path_abs = str(root / "src")
+    env["PYTHONPATH"] = src_path_abs
     cmd = [
         mutatest, "-s", src_path,
         "-t", f"{python} -m pytest tests/ -q",
@@ -84,9 +88,74 @@ def run_mutation(src_path: str, root: Path, n_samples: int,
     ]
     try:
         result = subprocess.run(cmd, cwd=root, capture_output=True,
-                                text=True, timeout=600)
+                                text=True, timeout=600, env=env)
     except subprocess.TimeoutExpired:
         return {"detected": 0, "survived": 0, "total": 0, "score": 0, "error": "timeout"}
+
+    detected = survived = 0
+    survivors = []
+    in_survivor_section = False
+    for line in result.stdout.split("\n") + result.stderr.split("\n"):
+        if "DETECTED:" in line:
+            detected = int(line.split(":")[1].strip())
+        if "SURVIVED:" in line:
+            survived = int(line.split(":")[1].strip())
+        # Track section boundaries
+        if line.strip() == "SURVIVED":
+            in_survivor_section = True
+            continue
+        if in_survivor_section and line.strip().startswith("---"):
+            continue  # separator line, still in survivor section
+        if in_survivor_section and line.strip().startswith("- src"):
+            # Format: " - src\file.py: (l: N, c: N) - mutation from X to Y"
+            parts = line.strip().split(" - ", 1)
+            location = parts[0].strip("- ")
+            mutation = parts[1] if len(parts) > 1 else ""
+            survivors.append({"location": location, "mutation": mutation})
+        if in_survivor_section and line.strip() == "":
+            # Empty line may end the section
+            pass
+        # Detect end of SURVIVED section (next major timestamp line)
+        if in_survivor_section and "RUN DATETIME" in line:
+            in_survivor_section = False
+    total = detected + survived
+    return {"detected": detected, "survived": survived, "total": total,
+            "score": round(detected / total * 100, 1) if total > 0 else 0,
+            "survivors": survivors}
+
+
+# ── Classification (mutation-fix-guide.md 三类修复模式) ─────────────────
+
+CLASSIFY_RULES = [
+    # 算术运算符
+    (re.compile(r"Add|Sub|Mult|Div|Mod|Pow|FloorDiv"), "arithmetic"),
+    # 比较边界
+    (re.compile(r"Eq|Gt|Lt|GtE|LtE|NotEq"), "boundary"),
+    # 布尔逻辑
+    (re.compile(r"Or\b|And\b|Not\b|If_Statement"), "boolean"),
+    # 值替换
+    (re.compile(r"None to|to None|True to False|False to True"), "value"),
+]
+
+EXEMPT_PATTERNS = [
+    re.compile(r"__main__"),     # CLI entry
+    re.compile(r"Slice|Unbound"), # Python equivalent
+]
+
+
+def classify_survivor(s: dict) -> str:
+    """Classify a survivor dict into one of the fix pattern categories."""
+    text = f"{s.get('location', '')} {s.get('mutation', '')}"
+    for pat, _ in ARID_PATTERNS:
+        if pat.search(text):
+            return "exempt"  # arid node
+    for pat, _ in EXEMPT_PATTERNS:
+        if pat.search(text):
+            return "exempt"
+    for pat, category in CLASSIFY_RULES:
+        if pat.search(text):
+            return category
+    return "other"
 
     detected = survived = 0
     for line in result.stdout.split("\n") + result.stderr.split("\n"):
@@ -140,6 +209,45 @@ def trend_arrow(project: str, current: float) -> str:
         return f"↓ declined from {prev}%"
     else:
         return f"→ stable (±{abs(current - prev):.1f}%)"
+
+
+def _write_fixes_report(path: Path, project: str, score: float,
+                        needs_fix: list, exempt: list) -> None:
+    """Auto-generate mutation-fixes.md with classified survivors."""
+    FIX_SUGGESTIONS = {
+        "arithmetic": "**改精确值断言**: 将方向性断言(如 `assert result > 0`)替换为精确计算期望值",
+        "boundary": "**加边界输入**: 添加恰好等于阈值的测试输入",
+        "boolean": "**加不对称输入**: 添加一个条件为True、另一个为False的输入组合",
+        "value": "**检查返回值类型**: 确认断言同时检查值和类型",
+    }
+    status = "PASS" if score >= 64 else ("WARN" if score >= 55 else "FAIL")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(f"# 突变修复建议 — {project} Review\n\n")
+        f.write(f"> 自动生成: 方案B 突变测试 | 得分: {score}%\n\n")
+        f.write(f"## 需要修复 ({len(needs_fix)})\n\n")
+        if needs_fix:
+            f.write("| # | 位置 | 类型 | 修复建议 |\n")
+            f.write("|:--:|------|------|------|\n")
+            for i, s in enumerate(needs_fix[:15], 1):
+                cat = s.get("category", "other")
+                suggestion = FIX_SUGGESTIONS.get(cat, "手动分析")
+                f.write(f"| {i} | {s['location']} | {cat} | {suggestion} |\n")
+        else:
+            f.write("无。所有幸存突变体均已豁免。\n")
+        if exempt:
+            f.write(f"\n## 豁免 ({len(exempt)})\n\n")
+            f.write("| 位置 | 原因 |\n")
+            f.write("|------|------|\n")
+            for s in exempt[:10]:
+                f.write(f"| {s['location']} | arid节点/等价突变/CLI入口 |\n")
+        f.write(f"\n## 修复优先级\n\n")
+        cats = {}
+        for s in needs_fix:
+            c = s.get("category", "other")
+            cats[c] = cats.get(c, 0) + 1
+        for c, n in sorted(cats.items(), key=lambda x: -x[1]):
+            f.write(f"- **{c}**: {n} 个\n")
+        f.write("\n修复顺序: 算术 > 布尔 > 边界 > 值替换\n")
 
 
 def main():
@@ -214,13 +322,41 @@ def main():
         "trend": arrow,
     }
 
+    # Collect and classify all survivors from the runs
+    all_survivors = {}
+    for r in results:
+        for s in r.get("survivors", []):
+            key = f"{s['location']}: {s['mutation']}"
+            if key not in all_survivors:
+                s["category"] = classify_survivor(s)
+                all_survivors[key] = s
+
+    needs_fix = [s for s in all_survivors.values() if s.get("category") != "exempt"]
+    exempt = [s for s in all_survivors.values() if s.get("category") == "exempt"]
+
+    # Auto-generate mutation-fixes.md
+    fixes_path = root / "openspec" / "changes" / "mutation-fixes.md"
+    fixes_path.parent.mkdir(parents=True, exist_ok=True)
+    _write_fixes_report(fixes_path, root.name, score, needs_fix, exempt)
+    print(f"Fix report: {fixes_path}")
+
     if args.json:
-        output["details"] = results
+        output["needs_fix"] = len(needs_fix)
+        output["exempt"] = len(exempt)
+        output["categories"] = {s["category"] for s in all_survivors.values()}
         print(json.dumps(output, indent=2))
     else:
         status = "PASS" if score >= 64 else ("WARN" if score >= 55 else "FAIL")
         print(f"Score: {score}% [{status}]")
         print(f"Trend: {arrow}")
+        print(f"Needs fix: {len(needs_fix)} | Exempt: {len(exempt)}")
+        cats = {}
+        for s in needs_fix:
+            c = s.get("category", "other")
+            cats[c] = cats.get(c, 0) + 1
+        for c, n in sorted(cats.items(), key=lambda x: -x[1]):
+            print(f"  {c}: {n}")
+        print(f"Fix report written to: {fixes_path}")
 
 
 if __name__ == "__main__":
