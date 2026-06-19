@@ -187,7 +187,8 @@ description: >-
 | [references/project-classification.md](references/project-classification.md) | 项目分级（P0/P1/P2 → 不同门禁标准） | 项目启动时 |
 | [references/startup-checklist.md](references/startup-checklist.md) | 项目启动预防性检查清单（C01-C06） | 新项目初始化时 |
 | [references/bdd-response-protocol.md](references/bdd-response-protocol.md) | BDD 响应协议（模块卡住→诊断→治疗→升级） | BDD触发时 |
-| [references/mutation-testing-guide.md](references/mutation-testing-guide.md) | 突变测试配置指南（Python/JS/Go/Rust） | TDD/Review阶段 |
+| [references/mutation-fix-guide.md](references/mutation-fix-guide.md) | 突变修复指南（三类修复模式+自动分类+触发链） | Review出口(自动) |
+| [references/mutation-testing-guide.md](references/mutation-testing-guide.md) | 突变测试配置指南（方案B: 7论文证据+三模策略） | TDD/Review阶段 |
 | [references/v0.2.0-roadmap.md](references/v0.2.0-roadmap.md) | v0.2.0 改进路线图（9缺口） | 全流程参考 |
 | [config/quality-gates.yml](config/quality-gates.yml) | 质量门禁配置（版本控制） | CI集成 |
 | [scripts/pre-commit-check.py](scripts/pre-commit-check.py) | Python 质量门禁（读 quality-gates.yml，框架检测） | 每次 commit |

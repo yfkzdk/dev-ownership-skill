@@ -267,6 +267,19 @@ def main():
         if not gf.exists():
             print(f"{YELLOW}[WARN]{NC} Feynman gate 'design' not recorded. Pass design gate before TDD commit.")
 
+    # Mutation fix report enforcement (Review exit)
+    if "design.md" not in staged and "proposal.md" not in staged:
+        # Not spec/design — check if we're in Review phase
+        if any("test_" in f or f.endswith(".py") for f in staged.split("\n")):
+            mutation_fixes = root / "openspec" / "changes" / "mutation-fixes.md"
+            # Only warn — don't block (mutation test may have no survivors)
+            if mutation_fixes.exists():
+                import os as _os3
+                mtime = _os3.path.getmtime(str(mutation_fixes))
+                age_hours = (__import__('time').time() - mtime) / 3600
+                if age_hours > 24:
+                    print(f"{YELLOW}[WARN]{NC} mutation-fixes.md is {age_hours:.0f}h old — may need refresh")
+
     # Rule 11: Format vs Logic mix detection
     if pt in ("python", "django", "go", "rust"):
         _, staged_diff, _ = run(["git", "diff", "--cached", "--unified=0"], root)
