@@ -45,7 +45,9 @@
 
 | 工具 | 测什么 | 什么时候跑 | 耗时 | 阻断级别 | 自动化状态 |
 |------|------|------|:--:|:--:|:--:|
-| **突变测试** (mutmut/stryker) | 测试断言质量 | Review exit | 2-10分钟 | ≥70% 软警告 | ❌ 手动(Windows 不支持 mutmut) |
+| **突变测试** (mutmut/stryker) | 测试断言质量 | Review exit | 2-10分钟 | ≥70% 软警告 | ⚠️ 见下方 Windows 兼容性说明 |
+| **pytest-gremlins** (推荐,Windows) | 同上 | Review exit | 1-5分钟 | ≥70% 软警告 | ⚠️ 需要 Python 3.11+, 比 mutmut 快 3.73x |
+| **mutatest2** (备选,Windows) | 同上 | Review exit | 2-10分钟 | ≥70% 软警告 | ⚠️ 需要 pyproject.toml + Python 3.11 |
 | **gate-quota close** | 门禁配额结转 | Retrospect exit | <1s | 必须执行(否则下个项目配额错误) | ❌ 手动 |
 | **known-traps 更新** | 陷阱库 | Retrospect exit | 2分钟 | 软要求 | ❌ 手动 |
 | **session 归档** | 对话记录 | 项目结束/会话结束 | 1分钟 | 软要求 | ❌ 手动 |
