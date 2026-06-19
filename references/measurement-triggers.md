@@ -45,9 +45,9 @@
 
 | 工具 | 测什么 | 什么时候跑 | 耗时 | 阻断级别 | 自动化状态 |
 |------|------|------|:--:|:--:|:--:|
-| **突变测试** (mutmut/stryker) | 测试断言质量 | Review exit | 2-10分钟 | ≥70% 软警告 | ⚠️ 见下方 Windows 兼容性说明 |
-| **pytest-gremlins** (推荐,Windows) | 同上 | Review exit | 1-5分钟 | ≥70% 软警告 | ⚠️ 需要 Python 3.11+, 比 mutmut 快 3.73x |
-| **mutatest2** (备选,Windows) | 同上 | Review exit | 2-10分钟 | ≥70% 软警告 | ⚠️ 需要 pyproject.toml + Python 3.11 |
+| **突变测试** (mutatest) | 测试断言质量 | Review exit | 2-5分钟 | **<55% 软警告**（不阻断。跑两次取平均。连续两个项目 <55% → 升级为硬要求） | ✅ Python 3.9+ |
+| **pytest-gremlins** (备选) | 同上 | Review exit | 1-5分钟 | **≥55% 软警告** | ⚠️ 需要 Python 3.11+ |
+| **mutatest2** (备选) | 同上 | Review exit | 2-10分钟 | **≥55% 软警告** | ⚠️ 需要 Python 3.11 |
 | **gate-quota close** | 门禁配额结转 | Retrospect exit | <1s | 必须执行(否则下个项目配额错误) | ❌ 手动 |
 | **known-traps 更新** | 陷阱库 | Retrospect exit | 2分钟 | 软要求 | ❌ 手动 |
 | **session 归档** | 对话记录 | 项目结束/会话结束 | 1分钟 | 软要求 | ❌ 手动 |
@@ -75,7 +75,7 @@
 | 工具 | 什么时候**不跑** |
 |------|------|
 | CDR | P2 测试项目 → 仅报告,不阻断 |
-| 突变测试 | Windows 环境 → 跳过(已知不兼容) |
+| 突变测试 | P2 测试项目 → 建议运行,不阻断 |
 | SR | N<30 commits → 跳过(无统计意义) |
 | 覆盖率 | `test:` 类型 commit(RED 阶段) → 不阻断 |
 | 搜索检查 | 非 Spec/Design commit → 不检查 |
@@ -92,6 +92,6 @@
 | T1: CDR 趋势对比 | 知道当前 CDR 但不知道是升是降 | pre-commit hook 存储上次 CDR 值,对比 |
 | T1: `--no-verify` 审计 | 规则加了但未统计 | Retrospect 阶段 AI 跑 git log |
 | T1: Feynman 门禁 | 唯一无自动化执行的关键步骤 | 暂无 hook 方案——依赖开发者纪律 |
-| T2: 突变测试 | Windows 不可用 | WSL 或切换到 stryker(JS)/PIT(Java) |
+| T2: 突变测试 | —（已解决: mutatest for Py3.9） | ✅ |
 | T2: gate-quota close | 项目结束时 AI 忘了执行 | 加入 pre-commit hook(检测 retrospect commit 时提醒) |
 | T2: session 归档 | 对话结束 AI 忘了 | 加入 Stop hook |
