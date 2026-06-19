@@ -45,7 +45,7 @@
 
 | 工具 | 测什么 | 什么时候跑 | 耗时 | 阻断级别 | 自动化状态 |
 |------|------|------|:--:|:--:|:--:|
-| **突变测试** (mutatest) | 测试断言质量 | Review exit | 2-5分钟 | **<55% 硬阻断 / 55-64% 软警告 / ≥64% 通过**。跑两次取平均。连续 3 项目 <55% → 升级为强制修复 | ✅ Python 3.9+ |
+| **突变测试** (mutatest) | 测试断言质量 | Review exit: targeted diff / Retrospect: full / Small(<200行): all | 2-5min | **<55% 硬阻断 / 55-64% 软警告 / ≥64% 通过**。跑两次取中位数。连续 3 项目 <55% → 强制修复。方案B: diff-based + arid过滤 + 趋势对比 | ✅ Python 3.9+ |
 | **pytest-gremlins** (备选) | 同上 | Review exit | 1-5分钟 | **≥55% 软警告** | ⚠️ 需要 Python 3.11+ |
 | **mutatest2** (备选) | 同上 | Review exit | 2-10分钟 | **≥55% 软警告** | ⚠️ 需要 Python 3.11 |
 | **gate-quota close** | 门禁配额结转 | Retrospect exit | <1s | 必须执行(否则下个项目配额错误) | ❌ 手动 |

@@ -3,6 +3,40 @@
 > 突变测试（Mutation Testing）是测量**测试质量**的唯一客观方法。
 > 行覆盖率说"这行被跑过"，突变测试说"这行的 bug 被测出来过"。
 
+## 证据基础
+
+本指南基于 7 篇工业级论文（全文阅读，非摘要推断）：
+
+| 论文 | 关键发现 | 我们的应用 |
+|------|---------|----------|
+| Google TSE 2022 | diff-based scoping + arid 过滤(15%→89%有效率) + 5算子(AOR/LCR/ROR/UOI/SBR) | diff-based + 3类arid规则 |
+| Google ICSE 2021 | r_s=0.9突变vs测试量, 覆盖率r_s=-0.24, 1470万突变体, 一行一个够 | 一行一个突变体 |
+| Zenseact ASE 2024 | 趋势 > 快照, dashboard > 文本报告, 16条CI建议 | 历史趋势对比 |
+| Crossfiring ICSE 2025 | 84%幸存者可通过增强断言杀死, 6x提升 | 幸存者处理指南 |
+| LLM FSE 2026 | LLM生成有效率43%→66%(SMART), 7B≈GPT-4o | 未来方向,暂不采用 |
+| FlakiMe | 5% flakiness→2-4%分数波动, 两次重跑缓解 | 跑两次取中位数 |
+| Zhang ICSME | R²=0.86, 两种评估指标强相关, 只用一个指标有效 | 只用突变得分 |
+
+## 三模策略
+
+| 模式 | 触发 | 范围 | 深度 | 时间 |
+|------|------|------|------|:--:|
+| **review** | Review 出口 | `git diff` 变更的 .py 文件 | 每文件 -n 20, 跑两次取中位数 | <2min |
+| **retrospect** | 项目结束 | 全项目 src/ | -n 30, 跑两次取中位数 | <10min |
+| **small** | <200行项目(自动检测) | 全项目 | -n 100(不采样) | <5min |
+
+## Arid 突变过滤
+
+仅需 3 个规则——Google 经验证明这 3 类从 15%→80% 有效率(TSE 2022 §3.2.5):
+
+```
+1. 日志调用: .log( / logger. / logging. / debug( / info( / warn( / error(
+2. 时间操作: sleep( / deadline / timeout / backoff / set_deadline(
+3. 配置/flag: .flags / .config / FLAGS_ / FLAG_
+```
+
+标记为 arid 的行 → 不生成突变体。避免在"日志打点""超时设置""开关变更"上浪费测试精力。
+
 ## Windows 配置（Python 3.9 — 已验证）
 
 **推荐**: `mutatest`（AST-based，无文件修改，Azure Pipelines 官方测试 Windows）
