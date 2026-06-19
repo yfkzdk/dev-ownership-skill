@@ -79,6 +79,23 @@ def get_global_state() -> dict[str, Any]:
     return load_json(GLOBAL_STATE)
 
 
+def cmd_set_level(project_id: str, level: str) -> None:
+    if level not in LEVEL_CONFIG:
+        print(f"Unknown level: {level}. Use P0, P1, or P2.")
+        return
+    state = get_project_state(project_id)
+    config = LEVEL_CONFIG[level]
+    state["level"] = level
+    state["design_skippable"] = config["design_skippable"]
+    state["quota_remaining"] = config["code_quota"]
+    state["last_updated"] = datetime.now().isoformat()
+    path = STATE_DIR / f"{project_id}.json"
+    save_json(path, state)
+    print(f"Project '{project_id}' set to {level}.")
+    print(f"  Design gates: {'skippable' if config['design_skippable'] else 'NOT skippable'}")
+    print(f"  Code gate quota: {config['code_quota']}")
+
+
 def cmd_status(project_id: str) -> None:
     state = get_project_state(project_id)
     lvl = state.get("level", "P2")
@@ -156,6 +173,33 @@ def cmd_complete(project_id: str, gate_name: str) -> None:
     print(f"Completed '{gate_name}'.")
 
 
+def cmd_feynman_pass(project_id: str, gate_name: str) -> None:
+    """Record Feynman gate as passed — creates gate file for pre-commit hook."""
+    if gate_name not in DESIGN_GATES + CODE_GATES:
+        print(f"Unknown gate: {gate_name}. Known: {DESIGN_GATES + CODE_GATES}")
+        return
+
+    gate_dir = STATE_DIR / "gates"
+    gate_dir.mkdir(parents=True, exist_ok=True)
+    gate_file = gate_dir / f"{project_id}-{gate_name}-passed.json"
+    gate_file.write_text(json.dumps({
+        "gate": gate_name,
+        "project": project_id,
+        "passed_at": datetime.now().isoformat(),
+    }))
+
+    # Also mark as completed in state
+    state = get_project_state(project_id)
+    if gate_name not in state["completed"]:
+        state["completed"].append(gate_name)
+    if gate_name in state["skipped"]:
+        state["skipped"].remove(gate_name)
+    state["last_updated"] = datetime.now().isoformat()
+    save_json(STATE_DIR / f"{project_id}.json", state)
+
+    print(f"Feynman gate '{gate_name}' passed. Pre-commit hook will allow next phase.")
+
+
 def cmd_close_project(project_id: str) -> None:
     """Close project: carry over uncompleted skipped gates to next project."""
     state = get_project_state(project_id)
@@ -196,6 +240,9 @@ def main():
     complete_p = sub.add_parser("complete", help="Mark a gate as completed")
     complete_p.add_argument("gate", help="Gate name")
 
+    feynman_p = sub.add_parser("feynman-pass", help="Record Feynman gate passed (creates hook file)")
+    feynman_p.add_argument("gate", help="Gate name: spec|design|tdd|review|retrospect")
+
     sub.add_parser("close", help="Close project and carry over debt")
 
     args = parser.parse_args()
@@ -208,6 +255,8 @@ def main():
         cmd_skip(args.project_id, args.gate)
     elif args.command == "complete":
         cmd_complete(args.project_id, args.gate)
+    elif args.command == "feynman-pass":
+        cmd_feynman_pass(args.project_id, args.gate)
     elif args.command == "close":
         cmd_close_project(args.project_id)
     else:

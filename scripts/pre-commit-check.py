@@ -253,6 +253,20 @@ def main():
                 except OSError:
                     pass
 
+    # Feynman gate chain: each phase commit requires previous gate passed
+    gate_dir = Path.home() / ".claude" / "gate-quota" / "gates"
+    project_name = root.name
+    if "design.md" in staged:
+        gf = gate_dir / f"{project_name}-spec-passed.json"
+        if not gf.exists():
+            print(f"{RED}[FAIL]{NC} Feynman gate 'spec' not passed. Required before design.md commit.")
+            print(f"  Answer 3 Feynman questions for Spec phase first.")
+            EXIT_CODE = 1
+    if any(f.endswith(".py") for f in staged.split("\n")):
+        gf = gate_dir / f"{project_name}-design-passed.json"
+        if not gf.exists():
+            print(f"{YELLOW}[WARN]{NC} Feynman gate 'design' not recorded. Pass design gate before TDD commit.")
+
     # Rule 11: Format vs Logic mix detection
     if pt in ("python", "django", "go", "rust"):
         _, staged_diff, _ = run(["git", "diff", "--cached", "--unified=0"], root)
