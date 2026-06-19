@@ -3,102 +3,69 @@
 > 突变测试（Mutation Testing）是测量**测试质量**的唯一客观方法。
 > 行覆盖率说"这行被跑过"，突变测试说"这行的 bug 被测出来过"。
 
+## Windows 配置（已验证）
+
+**前置条件**: Python 3.11+
+
+```bash
+pip install pytest-gremlins
+
+# Windows 必须设置三项:
+# 1. PYTHONUTF8=1       — 解决 GBK 编码问题
+# 2. --gremlin-executor=subprocess — Windows 无 fork()
+# 3. PYTHONPATH=src      — 项目路径（和运行测试一样）
+
+set PYTHONUTF8=1
+set PYTHONPATH=src
+python -m pytest tests/ --gremlins --gremlin-executor=subprocess -v
+
+# 结果解读:
+# Zapped: X gremlins (%) — 被测出来的 bug
+# Survived: Y gremlins (%) — 测试没发现的 bug（这是问题）
+# 突变得分 = Zapped / (Zapped + Survived) × 100%
+
+# 目标: ≥70%
+```
+
+## macOS/Linux 配置
+
+```bash
+pip install mutmut
+mutmut run
+mutmut results  # 查看突变得分
+```
+
 ## 原理
 
 ```
 原始代码:        x = a + b
 注入突变:        x = a - b   (将 + 改为 -)
-运行测试:        如果测试仍然通过 → 突变存活 → 测试不够好
-                如果测试失败     → 突变被杀死 → 测试有效
+测试应该失败:    断言 x == sum  → 失败了 → 突变被"杀死" ✅
+如果测试没失败:  断言 x == sum  → 通过了 → 突变"存活" ❌
+                → 这个测试没有真正验证加法逻辑
+
+"存活"的突变 = 测试套件的盲区
 ```
 
-突变存活率 = 被杀死的突变 / 总注入突变。目标 ≥ 70%。
+## 得分标准
 
-## Python 项目配置 (mutmut)
-
-### 安装
-
-```bash
-pip install mutmut
-```
-
-### 配置 `pyproject.toml`
-
-```toml
-[tool.mutmut]
-paths_to_mutate = "src/"
-paths_to_exclude = "tests/"
-runner = "python -m pytest"
-switches = [
-    "and_or",        # and ↔ or
-    "comparison",    # > ↔ >=, == ↔ !=
-    "number",        # 1 → 0, -1 → 1
-    "string",        # "foo" → ""
-    "slice_index",   # [0] → [1]
-    "operator",      # + ↔ -
-]
-```
-
-### 运行
-
-```bash
-# 运行突变测试
-mutmut run
-
-# 查看结果
-mutmut results
-
-# 生成 HTML 报告
-mutmut html
-```
-
-## JavaScript/TypeScript 项目配置 (Stryker)
-
-```bash
-npx stryker init
-# stryker.conf.json:
-# {
-#   "mutator": "javascript",
-#   "packageManager": "npm",
-#   "reporters": ["html", "clear-text", "progress"],
-#   "testRunner": "jest",
-#   "thresholds": { "high": 80, "low": 70, "break": 60 }
-# }
-```
-
-## Go 项目配置
-
-```bash
-# 使用 go-mutesting
-go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest
-go-mutesting ./...
-```
-
-## 在 dev-ownership 流程中的使用
-
-| 时机 | 动作 | 级别 |
+| 得分 | 评价 | 处置 |
 |------|------|:--:|
-| 每次 commit | 不跑（太慢，5-30分钟） | — |
-| 每个阶段出口 | 运行，记录得分 | 软警告 |
-| Review 阶段 | 审查突变报告，评估哪些测试需要加强 | — |
-| Retrospect | 突变得分趋势对比 | 指标 |
+| ≥70% | 测试质量合格 | 通过 |
+| 50-70% | 测试有盲区 | 警告——补充断言 |
+| <50% | 测试形式主义 | 阻断——重写测试 |
 
-## 突变得分作为 σ(t) 的输入
+## 常见存活突变及修复
 
-```
-σ(t) = mutation_score × 0.6 + (1 - ai_rollback_rate) × 0.4
-```
+| 突变类型 | 例子 | 为什么存活 | 怎么修 |
+|---------|------|-----------|--------|
+| return value → None | `return result` → `return None` | 没测返回值类型 | 加 `assert isinstance(result, ...)` |
+| not x → x | `if not items:` → `if items:` | 没测空列表分支 | 加 `test_empty_items_raises` |
+| or → and | `a or b` → `a and b` | 两个条件总是同时为 True | 加测试覆盖"仅 a True""仅 b True" |
+| + → - | `total + amount` → `total - amount` | 只测了一组数据 | 加边界值测试 |
 
-突变得分 < 70% 时：
-- σ(t) 下降 → SR 下降 → 如果 SR < 2.4 → 门禁冻结
-- 必须补强测试直到突变得分回到 70% 以上
+## 已知限制
 
-## 快速参考
-
-| 语言 | 工具 | 安装 | 运行时间 | 目标 |
-|------|------|------|:--:|:--:|
-| Python | mutmut | pip install mutmut | 5-20min | ≥70% |
-| Java | PIT | Maven/Gradle plugin | 10-30min | ≥70% |
-| JS/TS | Stryker | npm install @stryker-mutator/core | 5-30min | ≥70% |
-| Go | go-mutesting | go install | 3-15min | ≥70% |
-| Rust | cargo-mutants | cargo install | 10-40min | ≥70% |
+- **Windows**: 需要 Python 3.11+ 和 `PYTHONUTF8=1`。Python 3.9/3.10 不支持 pytest-gremlins。
+- **中文源码**: `PYTHONUTF8=1` 必须设置，否则 `pathlib.read_text()` 使用 GBK 编码报错。
+- **耗时**: 突变测试比普通测试慢 10-100 倍。只在 Review 阶段出口运行一次，不在每次 commit 时跑。
