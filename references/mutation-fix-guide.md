@@ -33,9 +33,15 @@
 每个幸存突变体:
   ① AI 读取突变位置源码(3-5 行上下文)
   ② AI 读取覆盖该行的一个测试
-  ③ AI 判断根因(断言/输入/分支/等价/耦合)
-  ④ AI 写具体修改建议(含代码 diff + 行号)
-  ⑤ 判断: auto-fix?
+  
+  ③ 搜索阶段（三通道并行——不凭训练数据）:
+     GitHub: 搜索同类突变(如 If_Statement→If_False)在开源项目的修复记录
+     Web:   搜索 "(mutation_type) fix pattern pytest" 最佳实践
+     Papers: 搜索 Crossfiring ICSE 2025 / 相关论文的方法论验证
+  
+  ④ AI 基于搜索结果 + 代码上下文 → 判断根因(断言/输入/分支/等价/耦合)
+  ⑤ AI 写具体修改建议(含代码 diff + 行号 + 搜索来源)
+  ⑥ 判断: auto-fix?
      YES → AI 直接修改测试文件, 重跑确认 KILLED
      NO  → 标记 Layer 2, 写入 mutation-fixes.md
 ```
