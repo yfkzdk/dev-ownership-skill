@@ -49,6 +49,24 @@ def check_commit_message(msg_file: str) -> int:
             # WARN only — don't block
             break
 
+    # --no-verify usage tracking
+    if "--no-verify:" in msg:
+        import json
+        from datetime import datetime
+        counter_file = Path.home() / ".claude" / "no-verify-count.json"
+        counter_file.parent.mkdir(parents=True, exist_ok=True)
+        data = {}
+        if counter_file.exists():
+            data = json.loads(counter_file.read_text())
+        data["total"] = data.get("total", 0) + 1
+        if "history" not in data:
+            data["history"] = []
+        data["history"].append({
+            "date": datetime.now().isoformat()[:10],
+            "reason": first_line[:100],
+        })
+        counter_file.write_text(json.dumps(data, indent=2))
+
     if violations > 0:
         print(f"\n{violations} violation(s) found. Commit blocked.")
         print("Fix the commit message and retry.")

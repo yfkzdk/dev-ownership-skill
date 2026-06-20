@@ -24,10 +24,21 @@
 - [ ] 如果项目有 `__main__.py` 或 CLI 入口
 - [ ] 决定: CLI 入口是否纳入测试范围？
 - [ ] 如果纳入 → 写至少 1 个 CLI 集成测试
-- [ ] 如果不纳入 → 从 coverage 统计中显式排除（`[tool.coverage.run] omit = ["__main__.py"]`）
+- [ ] 如果不纳入 → 从 coverage 统计中显式排除:
+  ```toml
+  # pyproject.toml
+  [tool.coverage.run]
+  omit = ["*/__main__.py"]
+  ```
+  或在 `.coveragerc` 中:
+  ```ini
+  [run]
+  omit = */__main__.py
+  ```
+- [ ] **默认推荐: 排除。** CLI 是 argparse 胶水代码——测试价值低。6 项目经验证实。
 
-**来源**: md2blog Retrospect, mini-erp-core Retrospect
-**重复次数**: 2
+**来源**: md2blog Retrospect, mini-erp-core Retrospect（2次）+ issue-triage-cli + mini-redis + mini-diff + mini-http
+**重复次数**: 6
 
 ### C03: 项目类型检测
 

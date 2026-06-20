@@ -259,13 +259,14 @@ def main():
     if "design.md" in staged:
         gf = gate_dir / f"{project_name}-spec-passed.json"
         if not gf.exists():
-            print(f"{RED}[FAIL]{NC} Feynman gate 'spec' not passed. Required before design.md commit.")
-            print(f"  Answer 3 Feynman questions for Spec phase first.")
+            print(f"{RED}[FAIL]{NC} Feynman gate 'spec' not passed.")
+            print(f"  To pass: ask AI 'Feynman spec questions' → answer 3 questions.")
+            print(f"  After: AI records your answers and runs feynman-pass spec.")
             EXIT_CODE = 1
     if any(f.endswith(".py") for f in staged.split("\n")):
         gf = gate_dir / f"{project_name}-design-passed.json"
         if not gf.exists():
-            print(f"{YELLOW}[WARN]{NC} Feynman gate 'design' not recorded. Pass design gate before TDD commit.")
+            print(f"{YELLOW}[WARN]{NC} Feynman gate 'design' not recorded.")
 
     # Mutation fix report enforcement (Review exit)
     if "design.md" not in staged and "proposal.md" not in staged:
