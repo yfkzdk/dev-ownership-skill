@@ -179,6 +179,17 @@ def cmd_feynman_pass(project_id: str, gate_name: str) -> None:
         print(f"Unknown gate: {gate_name}. Known: {DESIGN_GATES + CODE_GATES}")
         return
 
+    state = get_project_state(project_id)
+    level = state.get("level", "P2")
+
+    # P0/P1 design gates: AI cannot bypass — developer must answer
+    if gate_name in DESIGN_GATES and level in ("P0", "P1"):
+        if not state.get("design_skippable", False):
+            print(f"[BLOCKED] Design gate '{gate_name}' cannot be passed by AI on {level} projects.")
+            print(f"  Developer must answer Feynman questions. AI: ask the 3 questions.")
+            print(f"  After answers recorded, retry with --verified flag.")
+            return
+
     gate_dir = STATE_DIR / "gates"
     gate_dir.mkdir(parents=True, exist_ok=True)
     gate_file = gate_dir / f"{project_id}-{gate_name}-passed.json"
