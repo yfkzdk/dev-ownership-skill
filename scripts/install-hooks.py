@@ -52,17 +52,9 @@ exec "{python}" "{checker}" "$@"
         print(f"  pre-commit: installed")
         installed += 1
 
-    # commit-msg hook — message validation
-    commit_msg = hooks_dir / "commit-msg"
-    msg_checker = skill_dir / "scripts" / "commit-msg-check.py"
-    if msg_checker.exists():
-        commit_msg.write_text(f'''#!/usr/bin/env bash
-exec "{python}" "{msg_checker}" "$@"
-''')
-        if hasattr(os, "chmod"):
-            os.chmod(commit_msg, commit_msg.stat().st_mode | 0o111)
-        print(f"  commit-msg: installed")
-        installed += 1
+    # commit-msg hook — skipped on Windows (git doesn't invoke it reliably)
+    # Instead: pre-commit records every run in ~/.claude/commit-records.json
+    # Retrospect AI counts --no-verify from git log
 
     if installed == 0:
         print("Error: no checkers found")

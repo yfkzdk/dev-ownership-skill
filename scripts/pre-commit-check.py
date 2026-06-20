@@ -210,6 +210,19 @@ def main():
     pt = detect_type(root)
     results: dict[str, Any] = {"project_type": pt, "gates": {}}
 
+    # Record every pre-commit run for --no-verify tracking
+    import json as _json
+    from pathlib import Path as _Path
+    record_file = _Path.home() / ".claude" / "commit-records.json"
+    record_file.parent.mkdir(parents=True, exist_ok=True)
+    records = _json.loads(record_file.read_text()) if record_file.exists() else {"runs": []}
+    records["runs"].append({
+        "timestamp": __import__('datetime').datetime.now().isoformat(),
+        "project": str(root.name),
+        "cwd": str(root),
+    })
+    record_file.write_text(_json.dumps(records, indent=2))
+
     print(f"{BOLD}=== Quality Gates — {pt.upper()} ==={NC}")
     print(f"Root: {root}\n")
 
