@@ -70,16 +70,31 @@ def get_ai_commits(cwd: Path) -> set[str]:
         for h in output.split("\n"):
             if h.strip():
                 ai_hashes.add(h.strip())
+    # Fallback: if no AI signatures found (Rule 13 may have removed them),
+    # check if the primary committer matches known AI-assisted patterns
+    if not ai_hashes:
+        fallback_patterns = [
+            "dev@voices.local",   # dev-ownership skill default
+        ]
+        for pattern in fallback_patterns:
+            output = run_git(["log", "--all", "--format=%H", f"--author={pattern}"], cwd)
+            for h in output.split("\n"):
+                if h.strip():
+                    # Only count commits that added new files (not just docs)
+                    files = run_git(["diff-tree", "--no-commit-id", "--name-only", "-r", h.strip()], cwd)
+                    has_source = any(f.strip().endswith((".py", ".go", ".ts", ".js")) for f in files.split("\n") if f.strip())
+                    if has_source:
+                        ai_hashes.add(h.strip())
     return ai_hashes
 
 
 def group_files_by_commit(cwd: Path, ai_hashes: set[str]) -> set[str]:
-    """Get files introduced in AI-authored commits."""
+    """Get files introduced in AI-authored commits. Normalize paths."""
     ai_files: set[str] = set()
     for h in ai_hashes:
         files = run_git(["diff-tree", "--no-commit-id", "--name-only", "-r", h], cwd)
         for f in files.split("\n"):
-            f = f.strip()
+            f = f.strip().replace("\\", "/")  # normalize Windows backslash
             if f and any(f.endswith(ext) for ext in (".py", ".go", ".ts", ".js", ".java", ".rs")):
                 ai_files.add(f)
     return ai_files
@@ -113,23 +128,21 @@ def compute_cdr(cwd: Path, source_dirs: list[str]) -> dict[str, Any]:
             lines = count_lines(src_file)
             if lines == 0:
                 continue
-            rel_path = str(src_file.relative_to(cwd))
+            rel_path = str(src_file.relative_to(cwd)).replace("\\", "/")  # normalize
             total_lines += lines
 
-            # Check: was the LAST modification to this file by AI (not dev)?
-            last_author = run_git(["log", "-1", "--format=%an", "--", rel_path], cwd)
-            last_committer = run_git(["log", "-1", "--format=%cn", "--", rel_path], cwd)
+            # Check: does the MOST RECENT commit touching this file have Co-Authored-By?
+            latest_commit = run_git(["log", "-1", "--format=%H", "--", rel_path], cwd)
+            is_ai_last = latest_commit in ai_hashes if latest_commit else False
 
-            is_ai_last = any(
-                kw in (last_author + last_committer).lower()
-                for kw in ["claude", "copilot", "openai", "anthropic", "noreply"]
-            )
-
-            # Also check: did any commit touching this file have Co-Authored-By?
-            file_has_ai = any(
-                af == rel_path or rel_path.startswith(af) or rel_path.endswith(af.split("/")[-1])
-                for af in ai_files
-            )
+            # Check if any commit touching this file has Co-Authored-By
+            file_has_ai = rel_path in ai_files
+            # Also check partial path matches
+            if not file_has_ai:
+                for af in ai_files:
+                    if af in rel_path or rel_path in af:
+                        file_has_ai = True
+                        break
 
             module_feedback[rel_path] = {"total": lines, "ai_unverified": 0}
 
