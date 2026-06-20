@@ -10,6 +10,41 @@ description: >-
   documentation-only requests, or pure research without implementation.
 ---
 
+## 这个 skill 做什么——一句话
+
+> 从外部需求出发，走完 Spec→Design→TDD→Review→Retrospect 五个阶段，每一步自动检测、自动搜索、自动修复——检测不到的问题推到人工层。全流程可追溯、可回滚、可复盘。
+
+**完整闭环**:
+
+```
+外部需求进入
+  ↓
+Spec: 拆解需求 → 三通道并行搜索(GitHub/Web/论文) → 推理可行性 → 写形式化规格
+  ↓ commit (带 spec 条款引用)
+Design: 对标搜索结果 → 架构决策(ADR) → 模块分解
+  ↓ commit
+TDD: RED(先写失败测试) → GREEN(最小实现) → REFACTOR(重构)
+  ↓ commit (test→feat→refactor 三拆)
+Review: 自动测量(CDR/覆盖率/突变/Lint/安全) → AI 审查 → 发现问题
+  ↓
+  ├── 能自动修 → AI 搜索(GitHub/Web/论文) → 推理 → 直接改代码
+  └── 修不了 → 标记 Layer 2 → 开发者处理
+  ↓ commit
+Retrospect: 追溯审计(spec↔code 双向矩阵) → 失误记录 → 陷阱更新 → 归档
+  ↓ commit
+
+全程自动化:
+  每次 commit: CDR/覆盖率/Lint/Type/安全 → hook 强制执行
+  每个阶段出口: Feynman 门禁(理解验证) → 不过不进入下一阶段
+  每次检测到问题: 搜索→推理→解决→验证
+  每次修改: 可追溯到对应 spec 条款
+
+遇到未覆盖的边界 → 三层修复体系:
+  Layer 0: 自动化检测
+  Layer 1: AI 诊断 + 自动修复
+  Layer 2: 开发者处理
+```
+
 # Dev Ownership - AI辅助开发的决策者方法论
 
 ## 硬规则
