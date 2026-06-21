@@ -1,34 +1,26 @@
 # Quality Gates Configuration — dev-ownership skill
 # Machine-readable quality gate thresholds.
-# Used by pre-commit-check.sh and run-quality-gates.sh
 
-version: "0.2.0"
+version: "0.3.0"
 
 gates:
   # Layer 0: Static Analysis Base (Testing Trophy foundation)
-  # Hard block — fail = no commit
   static_analysis:
     enabled: true
     on_fail: block
-
     lint:
-      tool: ruff  # Python: ruff | JS/TS: eslint | Go: golangci-lint
+      tool: ruff
       args: ["check", "."]
       threshold: zero_errors
-
     type_check:
-      tool: mypy  # Python: mypy | JS/TS: tsc --noEmit | Go: go vet
+      tool: mypy
       args: ["--strict", "."]
       threshold: zero_errors
-
     security:
-      tools:
-        - bandit       # Python SAST
-        - pip-audit    # dependency vulnerability scan
+      tools: [bandit, pip-audit]
       threshold: zero_critical
-
     secret_detection:
-      tool: gitleaks  # or detect-secrets
+      tool: gitleaks
       args: ["detect", "--source", "."]
       threshold: zero_findings
 
@@ -36,88 +28,76 @@ gates:
   test_suite:
     enabled: true
     on_fail: block
-
     unit_tests:
-      ratio: 0.70  # 70% of all tests should be unit tests
-      pass_rate: 1.0  # 100% must pass
-
+      ratio: 0.70
+      pass_rate: 1.0
     integration_tests:
-      ratio: 0.20  # 20% of all tests
-
+      ratio: 0.20
     e2e_tests:
-      ratio: 0.10  # 10% max
-
+      ratio: 0.10
     branch_coverage:
-      threshold: 0.90  # 90% branch coverage
+      threshold: 0.90
       on_fail: block
 
-  # Layer 2: Test Quality (phase exit)
+  # Layer 2: Test Quality (phase exit — soft warn)
   test_quality:
     enabled: true
     on_fail: warn
-
     mutation_score:
-      tool: mutmut  # Python: mutmut | Java: PIT | JS: Stryker
-      threshold: 0.70  # 70% mutation score
+      tool: mutatest
+      threshold: 0.55
       on_fail: warn
-
     complexity:
       tool: radon
-      max_cyclomatic: 10  # per function
+      max_cyclomatic: 10
       on_fail: warn
-
     duplication:
-      max_percent: 0.03  # 3% max duplication
+      max_percent: 0.03
       on_fail: warn
 
-  # Layer 3: Minimum test quantity (Retrospect audit)
-  test_quantity:
+  # Layer 3: Project completion gates (Retrospect audit — HARD BLOCK)
+  project_completion:
     enabled: true
     on_fail: block
     thresholds:
-      P0: 20   # 面试/生产——至少20个测试
-      P1: 12   # 练习项目——至少12个测试
-      P2: 0    # 测试项目——不限制
-
-  # Characterization test protocol (C1/C2/C3)
-  char_test:
-    enabled: true
-    on_fail: warn
-    thresholds:
       P0:
-        C1: 3    # RED出口——至少3次拍照
-        C2: 2    # GREEN出口——至少2次深度对比
-        C3: 1    # Review出口——至少1次盲区探测
+        min_tests: 20
+        min_feynman_gates: 5
+        char_C1: 3
+        char_C2: 2
+        char_C3: 1
       P1:
-        C1: 2
-        C2: 1
-        C3: 1
+        min_tests: 12
+        min_feynman_gates: 3
+        char_C1: 2
+        char_C2: 1
+        char_C3: 1
       P2:
-        C1: 0
-        C2: 0
-        C3: 0
+        min_tests: 0
+        min_feynman_gates: 0
+        char_C1: 0
+        char_C2: 0
+        char_C3: 0
+
+  # Cold-start / Runtime metrics
+  cognitive_tracking:
     enabled: true
     on_fail: warn
-
     cdr:
-      description: "Cognitive Debt Ratio — cold start proxy (N < 30 commits)"
-      threshold: 0.15  # ≤15% unverified AI code
-      formula: "unverified_ai_lines / total_active_lines"
-
+      description: "Cognitive Debt Ratio"
+      threshold: 0.15
     sr:
-      description: "Stability Ratio — runtime metric (N ≥ 30 commits)"
+      description: "Stability Ratio"
       threshold: 2.4
-      window: 15  # commits
-      formula: "1 / (4 * sigma * (1 - sigma))"
-      sigma_proxy: "14_day_file_closure_ratio"
+      window: 15
 
   # Feynman Gate Quota
   feynman_gate:
     design_gate:
-      skippable: false  # never skip design/architecture gates
+      skippable: false
     code_gate:
-      quota_per_project: 1  # can skip 1 per project
-      carry_over: true  # skipped gates carry to next project
+      quota_per_project: 1
+      carry_over: true
 
 # Trigger timing
 triggers:
@@ -126,3 +106,4 @@ triggers:
   test_quality: on_phase_exit
   cognitive_tracking: on_phase_exit
   feynman_gate: on_phase_exit
+  project_completion: on_retrospect

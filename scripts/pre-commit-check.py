@@ -334,7 +334,21 @@ def main():
             EXIT_CODE = 1
         else:
             print(f"{GREEN}[CHAR TEST]{NC} C1={c1}/{ct['C1']} C2={c2}/{ct['C2']} C3={c3}/{ct['C3']}")
-    if "design.md" not in staged and "proposal.md" not in staged:
+
+        # Feynman gate count
+        feynman_count = 0
+        gate_dir = Path.home() / ".claude" / "gate-quota" / "gates"
+        for gate in ["spec","design","tdd","review","retrospect"]:
+            if (gate_dir / f"{project_name}-{gate}-passed.json").exists():
+                feynman_count += 1
+        feynman_thresholds = {"P0":5,"P1":3,"P2":0}
+        fmin = feynman_thresholds.get(level, 3)
+        if feynman_count < fmin:
+            print(f"{RED}[FAIL]{NC} Feynman gates: {feynman_count}/{fmin} required (level: {level})")
+            print(f"  Pass {fmin - feynman_count} more Feynman gate(s) before Retrospect commit.")
+            EXIT_CODE = 1
+        else:
+            print(f"{GREEN}[FEYNMAN]{NC} Gates {feynman_count}/{fmin} passed")
         # Not spec/design — check if we're in Review phase
         if any("test_" in f or f.endswith(".py") for f in staged.split("\n")):
             mutation_fixes = root / "openspec" / "changes" / "mutation-fixes.md"
