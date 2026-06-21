@@ -70,8 +70,32 @@ gates:
       max_percent: 0.03  # 3% max duplication
       on_fail: warn
 
-  # Layer 3: Cold-start / Runtime metrics
-  cognitive_tracking:
+  # Layer 3: Minimum test quantity (Retrospect audit)
+  test_quantity:
+    enabled: true
+    on_fail: block
+    thresholds:
+      P0: 20   # 面试/生产——至少20个测试
+      P1: 12   # 练习项目——至少12个测试
+      P2: 0    # 测试项目——不限制
+
+  # Characterization test protocol (C1/C2/C3)
+  char_test:
+    enabled: true
+    on_fail: warn
+    thresholds:
+      P0:
+        C1: 3    # RED出口——至少3次拍照
+        C2: 2    # GREEN出口——至少2次深度对比
+        C3: 1    # Review出口——至少1次盲区探测
+      P1:
+        C1: 2
+        C2: 1
+        C3: 1
+      P2:
+        C1: 0
+        C2: 0
+        C3: 0
     enabled: true
     on_fail: warn
 

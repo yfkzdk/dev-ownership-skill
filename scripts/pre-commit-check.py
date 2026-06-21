@@ -287,7 +287,27 @@ def main():
                           "--project", project_name, "--gate", "design", "--action", "add"],
                          capture_output=True)
 
-    # Mutation fix report enforcement (Review exit)
+    # Test quantity gate (Retrospect audit)
+    if "retrospect" in staged.lower() if isinstance(staged, str) else False:
+        # Count actual tests
+        test_count = 0
+        for f in root.rglob("tests/**/*.py"):
+            test_count += f.read_text(encoding="utf-8", errors="replace").count("def test_")
+        # Get threshold from config
+        level = "P1"  # default
+        try:
+            import json as _j2
+            gs = _j2.loads((Path.home()/".claude"/"gate-quota"/"gates"/f"{project_name}-state.json").read_text()) if (Path.home()/".claude"/"gate-quota"/"gates"/f"{project_name}-state.json").exists() else {}
+            level = gs.get("level","P1")
+        except: pass
+        thresholds = {"P0":20,"P1":12,"P2":0}
+        minimum = thresholds.get(level, 12)
+        if test_count < minimum:
+            print(f"{RED}[FAIL]{NC} Test count {test_count} < minimum {minimum} (level: {level})")
+            print(f"  Add {minimum - test_count} more tests before Retrospect commit.")
+            EXIT_CODE = 1
+        else:
+            print(f"{GREEN}[TEST COUNT]{NC} {test_count} tests >= {minimum} minimum")
     if "design.md" not in staged and "proposal.md" not in staged:
         # Not spec/design — check if we're in Review phase
         if any("test_" in f or f.endswith(".py") for f in staged.split("\n")):
