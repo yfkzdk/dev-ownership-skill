@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -293,12 +294,13 @@ def main():
         test_count = 0
         for f in root.rglob("tests/**/*.py"):
             test_count += f.read_text(encoding="utf-8", errors="replace").count("def test_")
-        # Get threshold from config
-        level = "P1"  # default
+        # Get threshold and level from gate state
+        level = "P1"
         try:
-            import json as _j2
-            gs = _j2.loads((Path.home()/".claude"/"gate-quota"/"gates"/f"{project_name}-state.json").read_text()) if (Path.home()/".claude"/"gate-quota"/"gates"/f"{project_name}-state.json").exists() else {}
-            level = gs.get("level","P1")
+            gs_file = Path.home()/".claude"/"gate-quota"/"gates"/f"{project_name}.json"
+            if gs_file.exists():
+                gs = _json.loads(gs_file.read_text())
+                level = gs.get("level","P1")
         except: pass
         thresholds = {"P0":20,"P1":12,"P2":0}
         minimum = thresholds.get(level, 12)
@@ -308,6 +310,30 @@ def main():
             EXIT_CODE = 1
         else:
             print(f"{GREEN}[TEST COUNT]{NC} {test_count} tests >= {minimum} minimum")
+
+        # Characterization test C1/C2/C3 gate
+        char_log = root / "openspec" / "changes" / "char-test-log.json"
+        c1 = c2 = c3 = 0
+        if char_log.exists():
+            try:
+                log_data = _json.loads(char_log.read_text())
+                for entry in log_data.get("entries", []):
+                    if entry.get("level") == "C1": c1 += 1
+                    elif entry.get("level") == "C2": c2 += 1
+                    elif entry.get("level") == "C3": c3 += 1
+            except: pass
+        char_thresholds = {"P0":{"C1":3,"C2":2,"C3":1},"P1":{"C1":2,"C2":1,"C3":1},"P2":{"C1":0,"C2":0,"C3":0}}
+        ct = char_thresholds.get(level, {"C1":0,"C2":0,"C3":0})
+        missing = []
+        if c1 < ct["C1"]: missing.append(f"C1({c1}/{ct['C1']})")
+        if c2 < ct["C2"]: missing.append(f"C2({c2}/{ct['C2']})")
+        if c3 < ct["C3"]: missing.append(f"C3({c3}/{ct['C3']})")
+        if missing:
+            print(f"{RED}[FAIL]{NC} Characterization tests incomplete: {', '.join(missing)}")
+            print(f"  Complete required C1/C2/C3 sessions before Retrospect commit.")
+            EXIT_CODE = 1
+        else:
+            print(f"{GREEN}[CHAR TEST]{NC} C1={c1}/{ct['C1']} C2={c2}/{ct['C2']} C3={c3}/{ct['C3']}")
     if "design.md" not in staged and "proposal.md" not in staged:
         # Not spec/design — check if we're in Review phase
         if any("test_" in f or f.endswith(".py") for f in staged.split("\n")):
