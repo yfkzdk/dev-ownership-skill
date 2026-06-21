@@ -275,11 +275,17 @@ def main():
             print(f"{RED}[FAIL]{NC} Feynman gate 'spec' not passed.")
             print(f"  To pass: ask AI 'Feynman spec questions' → answer 3 questions.")
             print(f"  After: AI records your answers and runs feynman-pass spec.")
+            subprocess.run([sys.executable, str(Path(__file__).resolve().parent / "gate-reminder.py"),
+                          "--project", project_name, "--gate", "spec", "--action", "add"],
+                         capture_output=True)
             EXIT_CODE = 1
     if any(f.endswith(".py") for f in staged.split("\n")):
         gf = gate_dir / f"{project_name}-design-passed.json"
         if not gf.exists():
             print(f"{YELLOW}[WARN]{NC} Feynman gate 'design' not recorded.")
+            subprocess.run([sys.executable, str(Path(__file__).resolve().parent / "gate-reminder.py"),
+                          "--project", project_name, "--gate", "design", "--action", "add"],
+                         capture_output=True)
 
     # Mutation fix report enforcement (Review exit)
     if "design.md" not in staged and "proposal.md" not in staged:
