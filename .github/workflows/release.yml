@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify skill integrity
+        run: |
+          pip install pyyaml
+          python scripts/smoke_test.py
+
+      - name: Extract changelog from VERSION
+        id: changelog
+        run: |
+          python -c "
+          import yaml, sys
+          with open('VERSION', encoding='utf-8') as f:
+              data = yaml.safe_load(f)
+          ver = data['version']
+          for entry in data.get('changelog', []):
+              if entry['version'] == ver:
+                  print(f'## v{ver} ({entry[\"date\"]})')
+                  print()
+                  for c in entry['changes']:
+                      print(f'- {c}')
+                  break
+          " > /tmp/changelog.md
+          cat /tmp/changelog.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: /tmp/changelog.md
+          generate_release_notes: false

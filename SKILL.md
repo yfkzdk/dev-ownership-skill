@@ -265,9 +265,10 @@ Review: 自动测量(CDR/覆盖率/Lint/安全) → AI 审查 → 发现问题
 
 ---
 
-## CI
+## CI/CD
 
-`.github/workflows/ci.yml` — push 时自动跑 L1(冒烟)+L2(集成)+L3(自引用)。PR 阻断不合规变更。
+`.github/workflows/ci.yml` — push 时跑 L1+L2+L3，PR 阻断不合规变更。
+`.github/workflows/release.yml` — 打 `v*` tag 时自动创建 GitHub Release，提取 VERSION changelog。
 
 ---
 
