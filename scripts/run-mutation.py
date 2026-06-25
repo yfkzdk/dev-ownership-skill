@@ -207,6 +207,8 @@ def classify_survivor(s: dict) -> str:
             return category
     return "other"
 
+def parse_mutation_output(result: subprocess.CompletedProcess) -> dict:
+    """Parse mutation engine stdout/stderr into detected/survived/total/score."""
     detected = survived = 0
     for line in result.stdout.split("\n") + result.stderr.split("\n"):
         if "DETECTED:" in line:
@@ -270,7 +272,6 @@ def _write_fixes_report(path: Path, project: str, score: float,
         "boolean": "**加不对称输入**: 添加一个条件为True、另一个为False的输入组合",
         "value": "**检查返回值类型**: 确认断言同时检查值和类型",
     }
-    status = "PASS" if score >= 64 else ("WARN" if score >= 55 else "FAIL")
     with open(path, "w", encoding="utf-8") as f:
         f.write(f"# 突变修复建议 — {project} Review\n\n")
         f.write(f"> 自动生成: 方案B 突变测试 | 得分: {score}%\n\n")
@@ -290,7 +291,7 @@ def _write_fixes_report(path: Path, project: str, score: float,
             f.write("|------|------|\n")
             for s in exempt[:10]:
                 f.write(f"| {s['location']} | arid节点/等价突变/CLI入口 |\n")
-        f.write(f"\n## 修复优先级\n\n")
+        f.write("\n## 修复优先级\n\n")
         cats = {}
         for s in needs_fix:
             c = s.get("category", "other")

@@ -141,7 +141,7 @@ def cmd_skip(project_id: str, gate_name: str) -> None:
         print(f"🔴 Cannot skip '{gate_name}' — quota exhausted.")
         print(f"   Remaining: {state['quota_remaining']}")
         print(f"   Carried debt: {state['quota_carried_from_prev']}")
-        print(f"   You must complete previous skipped gates first.")
+        print("   You must complete previous skipped gates first.")
         return
 
     state["skipped"].append(gate_name)
@@ -186,8 +186,8 @@ def cmd_feynman_pass(project_id: str, gate_name: str) -> None:
     if gate_name in DESIGN_GATES and level in ("P0", "P1"):
         if not state.get("design_skippable", False):
             print(f"[BLOCKED] Design gate '{gate_name}' cannot be passed by AI on {level} projects.")
-            print(f"  Developer must answer Feynman questions. AI: ask the 3 questions.")
-            print(f"  After answers recorded, retry with --verified flag.")
+            print("  Developer must answer Feynman questions. AI: ask the 3 questions.")
+            print("  After answers recorded, retry with --verified flag.")
             return
 
     gate_dir = STATE_DIR / "gates"

@@ -20,7 +20,6 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Optional
 
 
 RED = "\033[0;31m"
@@ -129,7 +128,7 @@ def phase_2_quality(root: Path, skill_dir: Path) -> list[dict[str, str]]:
     # Try to run pre-commit-check.py
     pre_commit = skill_dir / "scripts" / "pre-commit-check.py"
     if pre_commit.exists():
-        print(f"  Running pre-commit-check.py...")
+        print("  Running pre-commit-check.py...")
         code, stdout, stderr = run([sys.executable, str(pre_commit), "--json"], root)
         if code != 0:
             findings.append({
@@ -213,7 +212,7 @@ def phase_3_ci_audit(root: Path) -> list[dict[str, str]]:
 
     for step_name, keywords in required_ci_steps.items():
         has = any(
-            any(kw in (root / ".github" / "workflows" / f).read_text()
+            any(kw in (root / ".github" / "workflows" / f_name).read_text()
                 for f_name in [f.name for f in workflow_dir.rglob("*.yaml")] if (root / ".github" / "workflows" / f_name).exists())
             for kw in keywords
         ) if list(workflow_dir.rglob("*.yaml")) else False

@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -32,7 +31,6 @@ EXIT_CODE = 0
 
 def run(cmd: list[str], cwd: Path, env: dict | None = None) -> tuple[int, str, str]:
     """Run command with UTF-8, safe on Windows GBK environments."""
-    import os
     kwargs = dict(cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if env is not None:
         kwargs["env"] = env
@@ -172,7 +170,7 @@ def gate_lint(root: Path, pt: str) -> bool:
         if py_files:
             cmd = ["ruff", "check"] + py_files
         else:
-            print(f"  No staged .py files — lint skipped")
+            print("  No staged .py files — lint skipped")
             return True
 
     code, out, err = run(cmd, root)
@@ -369,7 +367,7 @@ def _verify_trace_completeness() -> int:
         print("  These gates should ALWAYS run. Possible hook chain break.")
     if missing_cond:
         print(f"  Conditional gates not triggered: {', '.join(missing_cond[:5])}{'...' if len(missing_cond) > 5 else ''}")
-        print(f"  (This is normal if no spec/design/test files were in this commit)")
+        print("  (This is normal if no spec/design/test files were in this commit)")
         # Write trace to record for post-mortem
         record = Path.home() / ".claude" / "gate-traces.json"
         try:
@@ -630,8 +628,8 @@ def main():
         gf = gate_dir / f"{project_name}-spec-passed.json"
         if not gf.exists():
             print(f"{RED}[FAIL]{NC} Feynman gate 'spec' not passed.")
-            print(f"  To pass: ask AI 'Feynman spec questions' → answer 3 questions.")
-            print(f"  After: AI records your answers and runs feynman-pass spec.")
+            print("  To pass: ask AI 'Feynman spec questions' → answer 3 questions.")
+            print("  After: AI records your answers and runs feynman-pass spec.")
             subprocess.run([sys.executable, str(Path(__file__).resolve().parent / "gate-reminder.py"),
                           "--project", project_name, "--gate", "spec", "--action", "add"],
                          capture_output=True)
@@ -659,7 +657,7 @@ def main():
             if gs_file.exists():
                 gs = _json.loads(gs_file.read_text())
                 level = gs.get("level","P1")
-        except: pass
+        except Exception: pass
         # Derive minimum from spec scenarios, not hardcoded
         if spec_count > 0:
             import math
@@ -686,7 +684,7 @@ def main():
                     if entry.get("level") == "C1": c1 += 1
                     elif entry.get("level") == "C2": c2 += 1
                     elif entry.get("level") == "C3": c3 += 1
-            except: pass
+            except Exception: pass
         char_thresholds = {"P0":{"C1":3,"C2":2,"C3":1},"P1":{"C1":2,"C2":1,"C3":1},"P2":{"C1":0,"C2":0,"C3":0}}
         ct = char_thresholds.get(level, {"C1":0,"C2":0,"C3":0})
         missing = []
@@ -695,7 +693,7 @@ def main():
         if c3 < ct["C3"]: missing.append(f"C3({c3}/{ct['C3']})")
         if missing:
             print(f"{RED}[FAIL]{NC} Characterization tests incomplete: {', '.join(missing)}")
-            print(f"  Complete required C1/C2/C3 sessions before Retrospect commit.")
+            print("  Complete required C1/C2/C3 sessions before Retrospect commit.")
             EXIT_CODE = 1
         else:
             print(f"{GREEN}[CHAR TEST]{NC} C1={c1}/{ct['C1']} C2={c2}/{ct['C2']} C3={c3}/{ct['C3']}")
@@ -756,8 +754,8 @@ def main():
                 if len(parts) >= 3:
                     old_f, new_f = parts[1], parts[2]
                     _, rename_diff, _ = run(["git", "diff", "--cached", "--", new_f], root)
-                    added = [l for l in rename_diff.split("\n") if l.startswith("+") and not l.startswith("+++")]
-                    removed = [l for l in rename_diff.split("\n") if l.startswith("-") and not l.startswith("---")]
+                    added = [ln for ln in rename_diff.split("\n") if ln.startswith("+") and not ln.startswith("+++")]
+                    removed = [ln for ln in rename_diff.split("\n") if ln.startswith("-") and not ln.startswith("---")]
                     if added and removed:
                         print(f"{YELLOW}[WARN]{NC} Rule 10: {old_f} → {new_f} has move AND modify.")
                         print("  Consider: 1st commit = pure move, 2nd commit = modifications")

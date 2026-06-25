@@ -18,9 +18,9 @@ def check_commit_message(msg_file: str) -> int:
 
     # Rule 12: Review+Retrospect merge detection
     if "review" in first_line.lower() and "retrospect" in first_line.lower():
-        print(f"[BLOCKING] Rule 12: Review and Retrospect must be separate commits.")
+        print("[BLOCKING] Rule 12: Review and Retrospect must be separate commits.")
         print(f"  Found both in: {first_line}")
-        print(f"  Split into: docs(review): ... AND docs(retrospect): ...")
+        print("  Split into: docs(review): ... AND docs(retrospect): ...")
         violations += 1
 
     # Rule 13: AI signature detection
@@ -33,9 +33,9 @@ def check_commit_message(msg_file: str) -> int:
     ]
     for pattern in ai_patterns:
         if re.search(pattern, msg, re.IGNORECASE):
-            print(f"[BLOCKING] Rule 13: AI signatures prohibited in commit messages.")
+            print("[BLOCKING] Rule 13: AI signatures prohibited in commit messages.")
             print(f"  Found: '{pattern}'")
-            print(f"  Record AI assistance in session log, not commit message.")
+            print("  Record AI assistance in session log, not commit message.")
             violations += 1
             break
 
@@ -43,9 +43,9 @@ def check_commit_message(msg_file: str) -> int:
     and_patterns = [r"\band\b", r"和", r"同时", r"以及"]
     for pattern in and_patterns:
         if re.search(pattern, first_line, re.IGNORECASE):
-            print(f"[WARN] Rule 8: Commit message may contain multiple concerns.")
+            print("[WARN] Rule 8: Commit message may contain multiple concerns.")
             print(f"  First line: {first_line}")
-            print(f"  If this commit does multiple things, split into separate commits.")
+            print("  If this commit does multiple things, split into separate commits.")
             # WARN only — don't block
             break
 

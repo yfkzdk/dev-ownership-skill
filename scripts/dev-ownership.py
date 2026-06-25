@@ -21,13 +21,10 @@ Each phase validates the previous phase before executing.
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent  # scripts/ -> skill root
 SCRIPTS = SKILL_ROOT / "scripts"
@@ -91,7 +88,7 @@ def _check_prereqs(project_root: Path, phase: str) -> bool:
             missing.append(prereq)
     if missing:
         print(f"[BLOCKED] Phase '{phase}' requires: {', '.join(missing)}")
-        print(f"  Run 'python dev-ownership.py status' to see pipeline state.")
+        print("  Run 'python dev-ownership.py status' to see pipeline state.")
         return False
     return True
 
@@ -298,7 +295,7 @@ def cmd_bump(level: str) -> int:
     skill_md.write_text(content, encoding="utf-8")
 
     print(f"Bumped: {current} → {new_version} ({level})")
-    print(f"  Updated: VERSION, SKILL.md")
+    print("  Updated: VERSION, SKILL.md")
     print(f"  Next: fill in changelog, then git commit + tag v{new_version}")
     return 0
 

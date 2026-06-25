@@ -11,7 +11,6 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import subprocess
 import sys
 import tempfile
@@ -61,7 +60,6 @@ def test_mutation_engine() -> None:
     check("--help works", code == 0, err or out)
 
     # Basic import check — validates engine can parse a Python file
-    import tempfile, os
     with tempfile.TemporaryDirectory() as td:
         (Path(td) / 'dummy.py').write_text('def foo(): return 1' + chr(10), encoding='utf-8')
         code, out, err = run_script(

@@ -15,9 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import subprocess
-from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -112,7 +110,7 @@ def count_lines(path: Path) -> int:
     """Count non-blank non-comment source lines."""
     try:
         lines = path.read_text(encoding="utf-8").split("\n")
-        return sum(1 for l in lines if l.strip() and not l.strip().startswith("#"))
+        return sum(1 for ln in lines if ln.strip() and not ln.strip().startswith("#"))
     except Exception:
         return 0
 

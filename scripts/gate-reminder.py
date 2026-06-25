@@ -10,7 +10,6 @@ Usage:
 """
 
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -48,9 +47,9 @@ def add_reminder(project: str, gate: str) -> None:
         print("")
         print("  To pass this gate:")
         print(f"  1. Ask AI: 'Feynman {gate} questions'")
-        print(f"  2. Answer the 3 questions")
-        print(f"  3. AI will record your answers")
-        print(f"  4. Re-commit to proceed")
+        print("  2. Answer the 3 questions")
+        print("  3. AI will record your answers")
+        print("  4. Re-commit to proceed")
         print("=" * 60)
         print("")
 

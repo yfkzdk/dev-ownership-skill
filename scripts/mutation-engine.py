@@ -388,7 +388,7 @@ def _mutate_text(orig: str, node_type: str, mutation: str) -> Optional[str]:
 
     if node_type == "NameConstant":
         # orig is the constant like "True", "False", or "None"
-        stripped = orig.strip()
+        orig.strip()
         swaps = {"True": "False", "False": "True", "None": "True"}
         for old, new in swaps.items():
             if re.search(r'\b' + re.escape(old) + r'\b', orig):
@@ -469,7 +469,6 @@ def _check_semantic_equiv(original: str, mutated: str,
         "suspicious" — likely equivalent (flag for review)
     """
     import difflib
-    from hashlib import md5
 
     # 1. AST structural comparison
     try:
@@ -597,7 +596,6 @@ def run_mutation(
     # Phase 4: Mutation trials
     results = {"detected": [], "survived": [], "timeout": [], "error": [], "total_runs": 0}
 
-    import shutil
 
     for i, target in enumerate(selected):
         if not target["mutations"]:
@@ -643,7 +641,7 @@ def run_mutation(
                         timeout=30, env=env,
                     )
                     test_ok = r.returncode == 0
-                    test_out = (r.stdout or "") + (r.stderr or "")
+                    (r.stdout or "") + (r.stderr or "")
 
             except subprocess.TimeoutExpired:
                 results["timeout"].append({
@@ -812,8 +810,8 @@ def main():
     else:
         fc = summary.get("function_classification", {})
         sc = summary.get("survivor_classification", {})
-        print(f"\nMutation Testing Summary")
-        print(f"=========================")
+        print("\nMutation Testing Summary")
+        print("=========================")
         print(f"Source: {summary['source_location']}")
         print(f"Functions: {sum(fc.values())} ({fc.get('pure',0)} pure, {fc.get('db',0)} db, {fc.get('io',0)} io)")
         print(f"Total targets: {summary['total_targets']}")
