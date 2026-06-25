@@ -1,0 +1,116 @@
+# Quality Gates Configuration — dev-ownership skill
+# Machine-readable quality gate thresholds.
+
+version: "0.3.0"
+
+gates:
+  # Layer 0: Static Analysis Base (Testing Trophy foundation)
+  static_analysis:
+    enabled: true
+    on_fail: block
+    lint:
+      tool: ruff
+      args: ["check", "."]
+      threshold: zero_errors
+    type_check:
+      tool: mypy
+      args: ["--strict", "."]
+      threshold: zero_errors
+    security:
+      tools: [bandit, pip-audit]
+      threshold: zero_critical
+    secret_detection:
+      tool: gitleaks
+      args: ["detect", "--source", "."]
+      threshold: zero_findings
+
+  # Layer 1: Test Suite (every commit)
+  test_suite:
+    enabled: true
+    on_fail: block
+    unit_tests:
+      ratio: 0.70
+      pass_rate: 1.0
+    integration_tests:
+      ratio: 0.20
+    e2e_tests:
+      ratio: 0.10
+    branch_coverage:
+      threshold: 0.90
+      on_fail: block
+
+  # Layer 2: Test Quality (phase exit — soft warn)
+  test_quality:
+    enabled: true
+    on_fail: warn
+    mutation_score:
+      tool: mutatest
+      threshold: 0.55
+      on_fail: warn
+    complexity:
+      tool: radon
+      max_cyclomatic: 10
+      on_fail: warn
+    duplication:
+      max_percent: 0.03
+      on_fail: warn
+
+  # Layer 3: Project completion gates (Retrospect audit — HARD BLOCK)
+  project_completion:
+    enabled: true
+    on_fail: block
+    test_minimum:
+      description: "Minimum test count derived from spec scenarios (T1..Tn in proposal.md)"
+      derivation:
+        P0: "spec_count (100% — every spec scenario needs ≥1 test)"
+        P1: "max(8, ceil(spec_count × 0.7)) — at least 70% of spec, floor of 8"
+        P2: "0 (no minimum)"
+      fallback_if_no_spec: {P0: 20, P1: 12, P2: 0}
+    thresholds:
+      P0:
+        min_tests: 20
+        min_feynman_gates: 5
+        char_C1: 3
+        char_C2: 2
+        char_C3: 1
+      P1:
+        min_tests: 12
+        min_feynman_gates: 3
+        char_C1: 2
+        char_C2: 1
+        char_C3: 1
+      P2:
+        min_tests: 0
+        min_feynman_gates: 0
+        char_C1: 0
+        char_C2: 0
+        char_C3: 0
+
+  # Cold-start / Runtime metrics
+  cognitive_tracking:
+    enabled: true
+    on_fail: warn
+    cdr:
+      description: "Cognitive Debt Ratio"
+      threshold: 0.15
+    sr:
+      description: "Stability Ratio"
+      threshold: 2.4
+      window: 15
+
+  # Feynman Gate Quota
+  feynman_gate:
+    design_gate:
+      skippable: false
+    code_gate:
+      quota_per_project: 1
+      carry_over: true
+
+# Trigger timing
+triggers:
+  static_analysis: on_commit
+  test_suite: on_commit
+  test_quality: on_phase_exit
+  cognitive_tracking: on_phase_exit
+  feynman_gate: on_phase_exit
+  project_completion: on_retrospect

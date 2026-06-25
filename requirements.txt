@@ -1,0 +1,6 @@
+# dev-ownership skill — toolchain dependencies
+# Install: pip install -r requirements.txt
+pyyaml>=6.0
+
+# Optional: quality gate tools (install separately)
+# pip install ruff mypy bandit

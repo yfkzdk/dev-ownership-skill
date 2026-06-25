@@ -1,0 +1,274 @@
+#!/usr/bin/env python3
+"""CDR/SR Tracker — Cognitive Debt Ratio & Stability Ratio.
+
+Fix v2:
+- --source-dirs parameter (auto-detects common patterns)
+- Test directories included in debt calculation
+- AI code detected via commit message (not just author-mail)
+- Feedback: test → module mapping
+
+Usage:
+  python cdr-sr-tracker.py --project-root . [--source-dirs src,api,lib] [--output json]
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+# Common source directories across languages
+AUTO_SOURCE_DIRS = ["src", "api", "lib", "app", "cmd", "pkg", "internal",
+                     "employee", "finance", "hardware", "common", "minierp"]
+TEST_DIRS = ["tests", "test", "__tests__", "spec"]
+
+
+def run_git(cmd: list[str], cwd: Path) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(cwd)] + cmd,
+        capture_output=True, text=True
+    )
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def detect_source_dirs(cwd: Path) -> list[str]:
+    """Auto-detect source directories by checking what actually has .py/.go/.ts files."""
+    found = []
+    for d in AUTO_SOURCE_DIRS:
+        p = cwd / d
+        if p.is_dir():
+            code_files = list(p.rglob("*.py")) + list(p.rglob("*.go")) + list(p.rglob("*.ts"))
+            if code_files:
+                found.append(d)
+    if not found:
+        # Fallback: find any dir with source files
+        for child in cwd.iterdir():
+            if child.is_dir() and child.name not in (".git", ".claude", "node_modules", "__pycache__"):
+                if list(child.rglob("*.py")) or list(child.rglob("*.go")):
+                    found.append(child.name)
+    return found if found else ["src"]
+
+
+def _load_cdr_config() -> dict:
+    """Load CDR detection patterns from config file, with defaults."""
+    config_paths = [
+        Path(__file__).resolve().parent.parent / "config" / "cdr-patterns.yml",
+        Path.home() / ".claude" / "skills" / "dev-ownership" / "config" / "cdr-patterns.yml",
+    ]
+    for cp in config_paths:
+        if cp.exists():
+            import yaml
+            with open(cp, encoding="utf-8") as f:
+                return yaml.safe_load(f)
+    # Fallback defaults
+    return {
+        "ai_commit_keywords": ["Co-Authored-By: Claude"],
+        "ai_author_patterns": ["dev@voices.local"],
+    }
+
+
+def get_ai_commits(cwd: Path) -> set[str]:
+    """Find commits authored by AI via commit message patterns (from cdr-patterns.yml)."""
+    ai_hashes: set[str] = set()
+    config = _load_cdr_config()
+    patterns = config.get("ai_commit_keywords", [])
+    for pattern in patterns:
+        output = run_git(["log", "--all", "--format=%H", f"--grep={pattern}"], cwd)
+        for h in output.split("\n"):
+            if h.strip():
+                ai_hashes.add(h.strip())
+    # Fallback: if no AI signatures found, check author patterns
+    if not ai_hashes:
+        fallback_patterns = config.get("ai_author_patterns", [])
+        for pattern in fallback_patterns:
+            output = run_git(["log", "--all", "--format=%H", f"--author={pattern}"], cwd)
+            for h in output.split("\n"):
+                if h.strip():
+                    # Only count commits that added new files (not just docs)
+                    files = run_git(["diff-tree", "--no-commit-id", "--name-only", "-r", h.strip()], cwd)
+                    has_source = any(f.strip().endswith((".py", ".go", ".ts", ".js")) for f in files.split("\n") if f.strip())
+                    if has_source:
+                        ai_hashes.add(h.strip())
+    return ai_hashes
+
+
+def group_files_by_commit(cwd: Path, ai_hashes: set[str]) -> set[str]:
+    """Get files introduced in AI-authored commits. Normalize paths."""
+    ai_files: set[str] = set()
+    for h in ai_hashes:
+        files = run_git(["diff-tree", "--no-commit-id", "--name-only", "-r", h], cwd)
+        for f in files.split("\n"):
+            f = f.strip().replace("\\", "/")  # normalize Windows backslash
+            if f and any(f.endswith(ext) for ext in (".py", ".go", ".ts", ".js", ".java", ".rs")):
+                ai_files.add(f)
+    return ai_files
+
+
+def count_lines(path: Path) -> int:
+    """Count non-blank non-comment source lines."""
+    try:
+        lines = path.read_text(encoding="utf-8").split("\n")
+        return sum(1 for l in lines if l.strip() and not l.strip().startswith("#"))
+    except Exception:
+        return 0
+
+
+def compute_cdr(cwd: Path, source_dirs: list[str]) -> dict[str, Any]:
+    """Cognitive Debt Ratio with multi-directory support."""
+    ai_hashes = get_ai_commits(cwd)
+    ai_files = group_files_by_commit(cwd, ai_hashes)
+
+    total_lines = 0
+    unverified_lines = 0
+    module_feedback: dict[str, dict[str, int]] = {}  # file → {total, unverified}
+
+    all_dirs = source_dirs + [d for d in TEST_DIRS if (cwd / d).is_dir()]
+
+    for dir_name in all_dirs:
+        dir_path = cwd / dir_name
+        if not dir_path.is_dir():
+            continue
+        for src_file in dir_path.rglob("*.py"):
+            lines = count_lines(src_file)
+            if lines == 0:
+                continue
+            rel_path = str(src_file.relative_to(cwd)).replace("\\", "/")  # normalize
+            total_lines += lines
+
+            # Check: does the MOST RECENT commit touching this file have Co-Authored-By?
+            latest_commit = run_git(["log", "-1", "--format=%H", "--", rel_path], cwd)
+            is_ai_last = latest_commit in ai_hashes if latest_commit else False
+
+            # Check if any commit touching this file has Co-Authored-By
+            file_has_ai = rel_path in ai_files
+            # Also check partial path matches
+            if not file_has_ai:
+                for af in ai_files:
+                    if af in rel_path or rel_path in af:
+                        file_has_ai = True
+                        break
+
+            module_feedback[rel_path] = {"total": lines, "ai_unverified": 0}
+
+            if file_has_ai and not is_ai_last:
+                # File was originally AI-authored but subsequently modified by dev → half debt
+                unverified_lines += lines // 3
+                module_feedback[rel_path]["ai_unverified"] = lines // 3
+            elif file_has_ai and is_ai_last:
+                # AI authored AND AI was the last to touch it → full debt
+                unverified_lines += lines
+                module_feedback[rel_path]["ai_unverified"] = lines
+            # else: no AI involvement → no debt
+
+    if total_lines == 0:
+        return {"cdr": 0.0, "total_lines": 0, "unverified_lines": 0,
+                "status": "no_data", "feedback": {}}
+
+    cdr = unverified_lines / total_lines
+    return {
+        "cdr": round(cdr, 4),
+        "total_lines": total_lines,
+        "unverified_lines": unverified_lines,
+        "ai_commits_found": len(ai_hashes),
+        "ai_files_tracked": len(ai_files),
+        "threshold": 0.15,
+        "status": "pass" if cdr <= 0.15 else "fail",
+        "feedback": {k: v for k, v in module_feedback.items() if v["ai_unverified"] > 0},
+    }
+
+
+def compute_sr(cwd: Path, source_dirs: list[str], window: int = 15) -> dict[str, Any]:
+    """Stability Ratio — unchanged from v1 but scoped to detected dirs."""
+    commit_hashes = run_git(["log", "--format=%H", f"-{window}"], cwd).split("\n")
+    commit_hashes = [h for h in commit_hashes if h]
+
+    if len(commit_hashes) < window:
+        return {"sr": None, "sigma": None, "status": "insufficient_data",
+                "commits_available": len(commit_hashes), "commits_needed": window}
+
+    files_touched: set[str] = set()
+    files_reopened: set[str] = set()
+
+    for commit in commit_hashes:
+        changed = run_git(["diff-tree", "--no-commit-id", "--name-only", "-r", commit], cwd)
+        changed = [f for f in changed.split("\n") if f]
+
+        for f in changed:
+            if f in files_touched:
+                files_reopened.add(f)
+            files_touched.add(f)
+
+    if not files_touched:
+        return {"sr": None, "sigma": None, "status": "no_data"}
+
+    sigma_star = 1.0 - (len(files_reopened) / len(files_touched))
+    sr = 1.0 / (4.0 * sigma_star * (1.0 - sigma_star)) if 0 < sigma_star < 1 else float("inf")
+
+    return {
+        "sr": round(sr, 2) if sr != float("inf") else "inf",
+        "sigma": round(sigma_star, 4),
+        "files_touched": len(files_touched),
+        "files_reopened": len(files_reopened),
+        "threshold": 2.4,
+        "status": "pass" if sr >= 2.4 else "fail",
+        "window_commits": len(commit_hashes),
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="CDR/SR Tracker v2")
+    parser.add_argument("--project-root", type=Path, default=Path.cwd())
+    parser.add_argument("--source-dirs", help="Comma-separated source directories (auto-detected if omitted)")
+    parser.add_argument("--output", choices=["json", "text", "feedback"], default="text")
+    args = parser.parse_args()
+
+    if args.source_dirs:
+        source_dirs = [d.strip() for d in args.source_dirs.split(",")]
+    else:
+        source_dirs = detect_source_dirs(args.project_root)
+
+    total_commits = len(run_git(["rev-list", "--count", "HEAD"], args.project_root).split("\n"))
+
+    if total_commits < 30:
+        mode = "cold_start"
+        result = compute_cdr(args.project_root, source_dirs)
+    else:
+        mode = "runtime"
+        result = compute_sr(args.project_root, source_dirs)
+
+    result["mode"] = mode
+    result["total_commits"] = total_commits
+    result["source_dirs"] = source_dirs
+
+    if args.output == "json":
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    elif args.output == "feedback":
+        fb = result.get("feedback", {})
+        if fb:
+            print("Modules with unverified AI code:")
+            for fpath, counts in sorted(fb.items()):
+                print(f"  {fpath}: {counts['ai_unverified']}/{counts['total']} lines unverified")
+        else:
+            print("No unverified modules found.")
+    else:
+        print(f"Mode: {mode} ({total_commits} commits)")
+        print(f"Source dirs: {', '.join(source_dirs)}")
+        if mode == "cold_start":
+            print(f"CDR: {result.get('cdr', 'N/A')} (threshold <= 0.15)")
+            print(f"  AI commits found: {result.get('ai_commits_found', 0)}")
+            print(f"  Unverified lines: {result.get('unverified_lines', '?')}")
+            print(f"  Total lines:      {result.get('total_lines', '?')}")
+            print(f"  Status:           {result.get('status', 'unknown')}")
+        else:
+            print(f"SR:  {result.get('sr', 'N/A')} (threshold >= 2.4)")
+            print(f"  sigma*:  {result.get('sigma', 'N/A')}")
+            print(f"  Files touched/reopened: {result.get('files_touched','?')}/{result.get('files_reopened','?')}")
+            print(f"  Status: {result.get('status', 'unknown')}")
+
+
+if __name__ == "__main__":
+    main()

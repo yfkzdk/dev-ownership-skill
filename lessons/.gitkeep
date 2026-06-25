@@ -1,0 +1,22 @@
+# Lessons Learned — 项目经验积累
+
+此目录存放每个项目完成后从审视报告中提取的经验。
+每个文件以日期为前缀命名。
+
+## 文件命名规范
+
+```
+lessons/
+├── .gitkeep
+├── 2026-06-14-voip-calc-core.md
+└── 2026-XX-XX-next-project.md
+```
+
+## 条目格式
+
+每个lesson条目包含:
+- 项目名
+- 日期
+- 陷阱描述
+- 根本原因
+- 是否已加入 known-traps.md
