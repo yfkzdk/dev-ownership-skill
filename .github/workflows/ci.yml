@@ -1,0 +1,44 @@
+name: skill-self-check
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install dependencies
+        run: pip install pyyaml pytest
+      - name: Check YAML syntax
+        run: |
+          python -c "import yaml; yaml.safe_load(open('config/quality-gates.yml')); print('quality-gates.yml OK')"
+          python -c "import yaml; yaml.safe_load(open('config/cdr-patterns.yml')); print('cdr-patterns.yml OK')"
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+      - name: Install dependencies
+        run: pip install pyyaml
+      - name: Smoke test (L1)
+        run: python scripts/smoke_test.py
+      - name: Integration test (L2)
+        run: python scripts/test_scripts.py
+      - name: Self-gate (L3)
+        run: bash scripts/self-gate.sh
