@@ -320,6 +320,7 @@ Commands:
   sync           Sync scripts to canonical location
   rollback [VER] Rollback to previous version
   watch          Auto-run self-test on file save
+  bump [LEVEL]   Bump version (patch|minor|major), updates VERSION+SKILL.md atomically
         """,
     )
     parser.add_argument("command", nargs="?", default="status",
