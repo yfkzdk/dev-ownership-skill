@@ -1,62 +1,71 @@
-version: "0.4.1"
-last_updated: "2026-06-25"
+version: 0.5.0
+last_updated: '2026-06-25'
 changelog:
-  - version: "0.4.1"
-    date: "2026-06-25"
-    changes:
-      - "P0修复: 移除PBT死代码(_run_pbt_check + 3个_pbt_*函数, -183行)"
-      - "P0修复: 去硬编码路径(o:/AII/ → 动态检测, 2处)"
-      - "P0修复: mutation-engine copytree Windows竞态(dirs_exist_ok + rmtree)"
-      - "P2修复: 新建requirements.txt(pyyaml)"
-      - "P2修复: CDR模式提取到config/cdr-patterns.yml"
-      - "搜索模型升级: 两级搜索(粗调用≤10行/通道 + 细调用按需)"
-      - "搜索产出: 5文件400行 → 1文件search-decision-brief.md(≤80行)"
-      - "参考文档: architecture-overview.md移除PBT引用(4处)"
-  - version: "0.4.0"
-    date: "2026-06-24"
-    changes:
-      - "拆分为两个 skill: dev-ownership (开发) + dev-ownership-harden (淬炼复盘)"
-      - "Session Start 移至文档最前面 (L13-L30)，解决 'Lost in the Middle' 跳过问题"
-      - "禁止行为 移至 硬规则 之后，确保强制执行类指令集中在头部"
-      - "386行 → ~220行，注意力衰减风险大幅降低"
-      - "六阶段 → 四阶段 (Spec/Design/TDD/Review)，Harden+Retrospect 独立为 dev-ownership-harden"
-  - version: "0.3.0"
-    date: "2026-06-23"
-    changes:
-      - "六阶段流程——新增 Harden（测试淬炼）阶段"
-      - "自建 mutation-engine.py 替代 mutatest（零依赖/Windows原生）"
-      - "Phase 0: 自动函数分类（pure/db/io）"
-      - "Phase 1: 约束自动推断（参数名/类型/默认值）"
-      - "Phase 3: 等价自动检测 + 跨项目等价记忆"
-      - "新增 gate_assert 裸 assert 检测门禁"
-      - "新增 AI 角色切换表 + 认知负荷分区"
-      - "新增 Session Start 机制（gate检查/认知地图/学习目标）"
-      - "新增解释门禁——每个阶段出口一句话"
-      - "新增元循环——技能自优化（等价阈值调优/热点盲区追踪）"
-      - "Rule 11 修复——新文件不再误判格式+逻辑混合"
-      - "mypy 修复——使用 sys.executable -m mypy 避免版本冲突"
-      - "门禁范围修复——lint 只看 staged 文件"
-      - "install-hooks.py 重写——单源同步 + 启动版本检查"
-      - "版本管理 + 回滚机制"
-  - version: "0.2.0"
-    date: "2026-06-19"
-    changes:
-      - "三通道搜索强制执行（search-summary.md + cross-reference）"
-      - "Feynman 门禁机制——每个阶段出口硬阻断"
-      - "pre-commit hook 集成 cdr-sr-tracker"
-      - "gate-reminder.py 门禁提醒系统"
-      - "gate-quota-tracker.py 门禁配额追踪"
-      - "C1/C2/C3 表征测试协议"
-      - "质量门禁配置 quality-gates.yml v0.3.0"
-      - "--no-verify 追踪改用 pre-commit 记录"
-      - "commit-msg hook 废弃（Windows 不触发）"
-      - "测试数量门禁从 spec 场景推导（非硬编码）"
-  - version: "0.1.0"
-    date: "2026-06-15"
-    changes:
-      - "初始五阶段流程（Spec/Design/TDD/Review/Retrospect）"
-      - "pre-commit-check.py v1——lint/type/安全/测试/CDR"
-      - "cdr-sr-tracker.py CDR/SR 追踪"
-      - "install-hooks.py 安装脚本"
-      - "项目分级 P0/P1/P2"
-      - "AI Phase Exit Enforcement 记忆机制"
+- version: 0.5.0
+  date: '2026-06-25'
+  changes:
+  - "重大重构: TDD→Decision Check + Review→Decision Audit (决策导向替代测试导向)"
+  - "D1/D2/D3协议: CFF预测后果 + Devil's Advocate误导识别 + ADR约束核查"
+  - "Design阶段: AI故意给出含隐藏缺陷的误导选项, 开发者必须识别"
+  - "Decision Audit: ADR后果回溯 + 决策耗时统计 + 盲区模式登记"
+  - "测试全部归入dev-ownership-harden (Harden+Retrospect)"
+  - "协议来源: CFF(Microsoft 2026) + Council死锁 + CANDOR对立辩论"
+- version: 0.4.1
+  date: '2026-06-25'
+  changes:
+  - 'P0修复: 移除PBT死代码(_run_pbt_check + 3个_pbt_*函数, -183行)'
+  - 'P0修复: 去硬编码路径(o:/AII/ → 动态检测, 2处)'
+  - 'P0修复: mutation-engine copytree Windows竞态(dirs_exist_ok + rmtree)'
+  - 'P2修复: 新建requirements.txt(pyyaml)'
+  - 'P2修复: CDR模式提取到config/cdr-patterns.yml'
+  - '搜索模型升级: 两级搜索(粗调用≤10行/通道 + 细调用按需)'
+  - '搜索产出: 5文件400行 → 1文件search-decision-brief.md(≤80行)'
+  - '参考文档: architecture-overview.md移除PBT引用(4处)'
+- version: 0.4.0
+  date: '2026-06-24'
+  changes:
+  - '拆分为两个 skill: dev-ownership (开发) + dev-ownership-harden (淬炼复盘)'
+  - Session Start 移至文档最前面 (L13-L30)，解决 'Lost in the Middle' 跳过问题
+  - 禁止行为 移至 硬规则 之后，确保强制执行类指令集中在头部
+  - 386行 → ~220行，注意力衰减风险大幅降低
+  - 六阶段 → 四阶段 (Spec/Design/TDD/Review)，Harden+Retrospect 独立为 dev-ownership-harden
+- version: 0.3.0
+  date: '2026-06-23'
+  changes:
+  - 六阶段流程——新增 Harden（测试淬炼）阶段
+  - 自建 mutation-engine.py 替代 mutatest（零依赖/Windows原生）
+  - 'Phase 0: 自动函数分类（pure/db/io）'
+  - 'Phase 1: 约束自动推断（参数名/类型/默认值）'
+  - 'Phase 3: 等价自动检测 + 跨项目等价记忆'
+  - 新增 gate_assert 裸 assert 检测门禁
+  - 新增 AI 角色切换表 + 认知负荷分区
+  - 新增 Session Start 机制（gate检查/认知地图/学习目标）
+  - 新增解释门禁——每个阶段出口一句话
+  - 新增元循环——技能自优化（等价阈值调优/热点盲区追踪）
+  - Rule 11 修复——新文件不再误判格式+逻辑混合
+  - mypy 修复——使用 sys.executable -m mypy 避免版本冲突
+  - 门禁范围修复——lint 只看 staged 文件
+  - install-hooks.py 重写——单源同步 + 启动版本检查
+  - 版本管理 + 回滚机制
+- version: 0.2.0
+  date: '2026-06-19'
+  changes:
+  - 三通道搜索强制执行（search-summary.md + cross-reference）
+  - Feynman 门禁机制——每个阶段出口硬阻断
+  - pre-commit hook 集成 cdr-sr-tracker
+  - gate-reminder.py 门禁提醒系统
+  - gate-quota-tracker.py 门禁配额追踪
+  - C1/C2/C3 表征测试协议
+  - 质量门禁配置 quality-gates.yml v0.3.0
+  - --no-verify 追踪改用 pre-commit 记录
+  - commit-msg hook 废弃（Windows 不触发）
+  - 测试数量门禁从 spec 场景推导（非硬编码）
+- version: 0.1.0
+  date: '2026-06-15'
+  changes:
+  - 初始五阶段流程（Spec/Design/TDD/Review/Retrospect）
+  - pre-commit-check.py v1——lint/type/安全/测试/CDR
+  - cdr-sr-tracker.py CDR/SR 追踪
+  - install-hooks.py 安装脚本
+  - 项目分级 P0/P1/P2
+  - AI Phase Exit Enforcement 记忆机制
