@@ -1,6 +1,6 @@
 ---
 name: dev-ownership
-version: 0.4.0
+version: 0.4.1
 description: >-
   Developer ownership methodology for AI-assisted coding. Invoke whenever
   the user asks to implement a feature, fix a bug, refactor, or design a

@@ -234,6 +234,75 @@ def _skill_version() -> str:
     return "unknown"
 
 
+def cmd_bump(level: str) -> int:
+    """Bump version number atomically across VERSION + SKILL.md.
+
+    Based on bump-my-version / Commitizen pattern: single command updates
+    all version-bearing files atomically, no manual sync.
+
+    Levels: patch (0.4.1→0.4.2), minor (0.4.1→0.5.0), major (0.4.1→1.0.0)
+    """
+    import yaml
+    import re
+    from datetime import date
+
+    if level not in ("patch", "minor", "major"):
+        print(f"[ERROR] Unknown bump level: {level}. Use: patch, minor, major")
+        return 1
+
+    # Parse current version
+    vf = SKILL_ROOT / "VERSION"
+    if not vf.exists():
+        print("[ERROR] VERSION file not found")
+        return 1
+
+    data = yaml.safe_load(vf.read_text(encoding="utf-8"))
+    current = str(data["version"])
+    parts = [int(x) for x in current.split(".")]
+    if len(parts) != 3:
+        print(f"[ERROR] Version '{current}' is not semver (MAJOR.MINOR.PATCH)")
+        return 1
+
+    # Bump
+    if level == "patch":
+        parts[2] += 1
+    elif level == "minor":
+        parts[1] += 1
+        parts[2] = 0
+    elif level == "major":
+        parts[0] += 1
+        parts[1] = 0
+        parts[2] = 0
+    new_version = f"{parts[0]}.{parts[1]}.{parts[2]}"
+    today = date.today().isoformat()
+
+    # 1. Update VERSION
+    data["version"] = new_version
+    data["last_updated"] = today
+    data["changelog"].insert(0, {
+        "version": new_version,
+        "date": today,
+        "changes": ["(fill in changes before committing)"],
+    })
+    vf.write_text(yaml.dump(data, allow_unicode=True, default_flow_style=False,
+                            sort_keys=False), encoding="utf-8")
+
+    # 2. Update SKILL.md frontmatter
+    skill_md = SKILL_ROOT / "SKILL.md"
+    content = skill_md.read_text(encoding="utf-8")
+    content = re.sub(
+        r'^version:\s*[\d.]+',
+        f'version: {new_version}',
+        content, count=1, flags=re.MULTILINE
+    )
+    skill_md.write_text(content, encoding="utf-8")
+
+    print(f"Bumped: {current} → {new_version} ({level})")
+    print(f"  Updated: VERSION, SKILL.md")
+    print(f"  Next: fill in changelog, then git commit + tag v{new_version}")
+    return 0
+
+
 # ── Main ────────────────────────────────────────────────────────────────────
 
 def main() -> int:
@@ -255,10 +324,12 @@ Commands:
     )
     parser.add_argument("command", nargs="?", default="status",
                         choices=["status", "check", "harden", "install",
-                                 "self-test", "sync", "rollback", "watch"])
+                                 "self-test", "sync", "rollback", "watch", "bump"])
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
     parser.add_argument("--full", action="store_true", help="Full mode (harden)")
     parser.add_argument("--version", type=str, help="Version for rollback")
+    parser.add_argument("--level", type=str, choices=["patch", "minor", "major"],
+                        default="patch", help="Bump level (bump command)")
     args = parser.parse_args()
 
     project_root = args.project_root.resolve()
@@ -272,6 +343,7 @@ Commands:
         "sync": cmd_sync,
         "rollback": lambda: cmd_rollback(args.version),
         "watch": cmd_watch,
+        "bump": lambda: cmd_bump(args.level),
     }
 
     fn = commands.get(args.command)

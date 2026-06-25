@@ -160,8 +160,11 @@ def _list_backups() -> list[Path]:
     return [b for b in backups if b.is_dir()]
 
 
-def _rollback(version: str | None = None) -> bool:
-    """Restore a backed-up version. If version is None, restore latest."""
+def _rollback(version: str | None = None, dry_run: bool = False) -> bool:
+    """Restore a backed-up version. If version is None, restore latest.
+
+    Based on pipu-cli pattern: --dry-run previews without executing.
+    """
     backups = _list_backups()
     if not backups:
         print("No backups available.")
@@ -176,6 +179,14 @@ def _rollback(version: str | None = None) -> bool:
             return False
     else:
         target = backups[0]
+
+    if dry_run:
+        print(f"[DRY RUN] Would restore: {target.name}")
+        src_scripts = target / "scripts"
+        if src_scripts.exists():
+            for f in sorted(src_scripts.glob("*.py")):
+                print(f"  + {f.name}")
+        return True
 
     # Restore scripts
     src_scripts = target / "scripts"
@@ -244,6 +255,7 @@ def main():
     parser.add_argument("--sync-only", action="store_true", help="Sync scripts only, skip hook install")
     parser.add_argument("--rollback", nargs="?", const="__LATEST__", default=None, metavar="VERSION",
                         help="Rollback to a previous version (latest if no version given)")
+    parser.add_argument("--dry-run", action="store_true", help="Preview rollback without executing")
     parser.add_argument("--list-backups", action="store_true", help="List available backups")
     args = parser.parse_args()
 
@@ -267,7 +279,7 @@ def main():
     # --rollback
     if args.rollback is not None:
         ver = None if args.rollback == "__LATEST__" else args.rollback
-        ok = _rollback(ver)
+        ok = _rollback(ver, dry_run=args.dry_run)
         if not ok:
             sys.exit(1)
         return

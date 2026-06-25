@@ -53,6 +53,15 @@ def main() -> int:
         check("VERSION has version field", has_version)
         has_changelog = "changelog:" in content
         check("VERSION has changelog", has_changelog)
+        # Version consistency: VERSION == SKILL.md frontmatter
+        if has_version:
+            import re
+            v_m = re.search(r'version:\s*"?([\d.]+)"?', content)
+            s_m = re.search(r'^version:\s*([\d.]+)',
+                           (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8"), re.MULTILINE)
+            if v_m and s_m:
+                check(f"VERSION({v_m.group(1)}) == SKILL.md({s_m.group(1)})",
+                      v_m.group(1) == s_m.group(1))
     else:
         check("VERSION exists", False)
 
