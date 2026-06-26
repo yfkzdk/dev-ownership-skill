@@ -14,7 +14,7 @@ description: >-
 
 > 从外部需求出发，走完 Spec→Design→Decision Check→Decision Audit 四个阶段。每步自动搜索、AI 故意挑战你的决策、你必须判断对错。全流程可追溯、可回滚、可复盘。
 >
-> 测试的事全归 **dev-ownership-harden**——代码写完后做突变淬炼 + 复盘。
+> 测试的事全归 **harden/** 子技能——代码写完后做突变淬炼 + 复盘。
 
 ```
 外部需求进入
