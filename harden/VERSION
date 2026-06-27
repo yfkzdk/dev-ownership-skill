@@ -1,16 +1,24 @@
-version: "0.4.1"
-last_updated: "2026-06-25"
+version: 0.5.0
+last_updated: '2026-06-27'
 changelog:
-  - version: "0.4.1"
-    date: "2026-06-25"
-    changes:
-      - "搜索模型升级: 两级搜索(粗调用≤10行/通道 + 细调用按需)"
-      - "搜索产出: search-decision-brief.md(≤80行)替代5文件旧格式"
-      - "CI/CD: ci.yml(release验证) + release.yml(tag→Release)"
-  - version: "0.4.0"
-    date: "2026-06-24"
-    changes:
-      - "从dev-ownership拆分: Harden(淬炼) + Retrospect(复盘)独立技能"
-      - "Session Start: gate检查 + 认知地图加载 + 学习目标"
-      - "搜索-推理-逻辑链: 淬炼阶段特有触发条件"
-      - "元循环参数调优 + 等价记忆跨项目共享"
+- version: 0.5.0
+  date: '2026-06-27'
+  changes:
+  - '同步主skill: Review→Decision Audit, TDD→Design'
+  - Step 3 搜索→生成→确认→验证 强制闭环
+  - Step 0.5 静态检查 (lint+type阻断)
+  - '救砖协议: 循环3次降级通道'
+  - '搜索去噪: 技术冲突必须对立格式'
+- version: 0.4.1
+  date: '2026-06-25'
+  changes:
+  - '搜索模型升级: 两级搜索(粗调用≤10行/通道 + 细调用按需)'
+  - '搜索产出: search-decision-brief.md(≤80行)替代5文件旧格式'
+  - 'CI/CD: ci.yml(release验证) + release.yml(tag→Release)'
+- version: 0.4.0
+  date: '2026-06-24'
+  changes:
+  - '从dev-ownership拆分: Harden(淬炼) + Retrospect(复盘)独立技能'
+  - 'Session Start: gate检查 + 认知地图加载 + 学习目标'
+  - '搜索-推理-逻辑链: 淬炼阶段特有触发条件'
+  - 元循环参数调优 + 等价记忆跨项目共享
