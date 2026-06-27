@@ -1,6 +1,6 @@
 ---
 name: verify-spec
-version: 0.2.0
+version: 0.2.1
 description: >-
   Code correctness verification against spec/ADR. Extracts verifiable rules
   from natural-language requirements, checks code compliance via LLM reasoning,
@@ -101,8 +101,12 @@ Step 6: 修正 → FAIL 修正后重跑(≤2次), DISPUTED 你裁决
 || 检查项 | 工具 | 判定标准 |
 ||------|------|------|
 || 死代码 | Vulture | 从未被调用的函数/类/变量 |
-|| 冗余 | AST 结构相似度 | 两个函数 AST 结构相似 ≥85% |
-|| 过度设计 | AST 模式 | 嵌套 >3 / 参数 >5 / 单文件 >300 行 / 单方法类 |
+|| 冗余 Type 1-2 | AST 结构相似度 | 两个函数 AST 结构相似 ≥85% |
+|| 冗余 Type 3-4 | AST 粗筛(相似≥70%)→ LLM 语义判断 | 语法不同但功能相同的代码块 |
+|| 无引用抽象 | AST 查 Factory/Adapter/Generic 类 | 0 外部引用 = FAIL |
+|| 框架过重 | LLM 推理 | "引入的框架/库是否能用标准库替代" |
+|| 不可测抽象 | mock 依赖分析 | 方法需要 >3 个 mock 才能测试 = FAIL |
+|| 过度设计(旧) | AST 模式 | 嵌套 >3 / 参数 >5 / 单文件 >300 行 / 单方法类 |
 || 调用环 | call graph 遍历 | f1→f2→...→f1 形成回路 |
 
 ---

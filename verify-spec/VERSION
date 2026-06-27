@@ -1,6 +1,13 @@
 version: "0.2.0"
 last_updated: "2026-06-26"
 changelog:
+  - version: "0.2.1"
+    date: "2026-06-27"
+    changes:
+      - "Step 5 扩展: Type 3-4 语义冗余 + YAGNI/KISS 过度设计治理"
+      - "新增: 无引用抽象(Factory/Adapter,0外部引用=FAIL)"
+      - "新增: 框架过重(LLM推理标准库替代可行性)"
+      - "新增: 不可测抽象(mock依赖>3=FAIL)"
   - version: "0.2.0"
     date: "2026-06-26"
     changes:
