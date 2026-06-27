@@ -1,11 +1,18 @@
-version: "0.1.0"
+version: "0.2.0"
 last_updated: "2026-06-26"
 changelog:
+  - version: "0.2.0"
+    date: "2026-06-26"
+    changes:
+      - "对抗去伪(Step 3): Redhound模式的Debunker Agent独立推翻每条FAIL"
+      - "金值比对(Step 4): spec已知输入→期望输出精确比对"
+      - "双Agent架构: Investigator + Debunker, 禁止同Agent自审"
+      - "覆盖10类代码错误"
+      - "报告: PASS/CONFIRMED/OVERRULED/DISPUTED"
+    references:
+      - "Redhound (Canonical 2026): adversarial debunking"
+      - "Zhou et al. (May 2026): LLM static verification"
   - version: "0.1.0"
     date: "2026-06-26"
     changes:
       - "初始版本: 规则提取→验证→健康扫描→修正"
-      - "LLM 两阶段验证 (semcheck + Zhou et al. 模式)"
-      - "纯英语规则 (prosecheck RULES.md 模式)"
-      - "金值抽查 + Vulture + AST 兜底 (equiv 哲学)"
-      - "健康评分: 规则通过率×0.5 + 健康×0.3 + 金值×0.2"
