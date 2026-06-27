@@ -1,6 +1,18 @@
-version: "0.2.0"
-last_updated: "2026-06-26"
+version: "0.3.0"
+last_updated: "2026-06-27"
 changelog:
+  - version: "0.3.0"
+    date: "2026-06-27"
+    changes:
+      - "Plan A 落地: 结构隔离 + 全量审查 + 硬阻断 + 全量重跑"
+      - "硬规则 2: Investigator/Debunker 独立 session, 信息仅通过文件传递"
+      - "硬规则 5: Debunker 审查全量(PASS 30%抽样 + 全部 FAIL/UNCERTAIN)"
+      - "Step 1: 强制金值生成 5组/关键规则, 金值=0 -> UNCERTAIN"
+      - "Debunker 新判定: FAKE_PASS (Investigator 漏了的 bug)"
+      - "Step 6: 修正后重跑 Step 2-5 全部"
+      - "硬阻断评分: CONFIRMED/FAKE_PASS/金值失败 -> 总分上限 50"
+      - "通过阈值: >=70 PASS / 50-69 WARN / <50 FAIL"
+      - "框架过重: LLM推理+规模阈值+引用spec范围条款"
   - version: "0.2.1"
     date: "2026-06-27"
     changes:
