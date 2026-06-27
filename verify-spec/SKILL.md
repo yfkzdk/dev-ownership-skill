@@ -89,7 +89,9 @@ Step 6: 修正 → 修正后重跑 Step 2-5 (≤2次), DISPUTED 你裁决
 
 ## Step 3: Debunker Agent 对抗去伪
 
-**独立 Agent 2** — **新对话 session。** 只接收 `rules-verified.md` 文本 + 代码，不共享 Investigator 的上下文。
+**独立 Agent 2 — 跨模型执行。** Step 2 完成后暂停, 产出一份审查材料。**标注: "[CROSS-MODEL] 以下是 Investigator 的 rules-verified.md + 代码。请独立判断: ①每个 FAIL 是真 bug 还是假阳性? ②抽样审查 PASS 条目——是否有 Investigator 漏掉的 bug?"** 开发者将此材料交给其他模型(GPT/DeepSeek等)执行审查。
+
+**跨模型审查结果回来后**, AI 合并 Investigator + 跨模型 Debunker 的结果:
 
 **审查范围: 全部。** 不只看 FAIL。PASS 抽样 30% + 全部 FAIL + 全部 UNCERTAIN。
 
