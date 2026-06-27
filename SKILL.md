@@ -39,6 +39,7 @@ Decision Audit: ADR后果回溯 → 决策耗时统计 → 失误模式记录
 |------|-----|------|
 | **Gate 检查** | AI | 运行 `python scripts/gate-reminder.py --project ALL --action check`。如果有 pending gates → 立即告知开发者 |
 | **认知地图回顾** | AI | 检查上轮 Decision Audit 盲区类型 + 等价记忆 + `mutation-engine-params.json` → 本轮 Design/Decision Check 阶段提醒开发者优先关注这些已知陷阱 |
+| **断点恢复** | AI | 检查 `state.json` 的 `checkpoint` 字段。如果有 → 从该阶段直接恢复，跳过前置阶段，不重新加载已完成的 spec/ADR |
 | **学习目标** | AI 问 | "这一轮你主要想练什么？写测试？做设计决策？还是读突变报告？" |
 | **项目周期检查** | AI | ≥3 个项目周期 → 确认是否启动渐进撤除 |
 
@@ -205,6 +206,7 @@ Decision Audit: ADR后果回溯 → 决策耗时统计 → 失误模式记录
 || **AI自检** | 误导有搜索证据?/正常选项可行?/每项对应SPEC? |
 || **出口** | 设计文档+ADR+commit+Feynman |
 || **Feynman** | ①误导你识别出来了吗？②AI给一段代码,故意违反一条ADR约束——指出违反哪条ADR+在你选的设计下为什么它是错的。③新增维度，哪先改？ |
+|| **5: 断点** | 估算总行数 > 400 → commit 后暂停，剩余阶段在下一个 session 执行。断点写入 state.json: `{"checkpoint":"post-design","estimated_loc":N}`。≤400 行则直接进入 Decision Check |
 
 ### 阶段3: Decision Check（决策校验）
 
